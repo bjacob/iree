@@ -50,6 +50,8 @@ void addLinalgToLLVMPasses(OpPassManager &passManager) {
   // Distribute linalg op among a 3d grid of parallel threads. Tile each
   // workgroup thread memory then vectorize the linalg op.
   passManager.addPass(createLinalgTileAndDistributePass());
+  // Add ruy stuff -> to scf or llvm
+  // Linalg on tensors directly lowers to loops for now.
   if (!clEnableLinalgOnTensors) {
     passManager.addPass(createLegalizeNumWorkgroupsFnPass());
   }
