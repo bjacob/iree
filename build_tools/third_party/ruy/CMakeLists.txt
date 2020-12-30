@@ -1115,3 +1115,143 @@ external_cc_library(
     ${RUY_LINKOPTS_PTHREAD}
   PUBLIC
 )
+
+external_cc_library(
+  PACKAGE
+    ruy
+  NAME
+    profiler_profiler
+  ROOT
+    ${RUY_SRC_ROOT}
+  HDRS
+    "profiler/profiler.h"
+    "profiler/treeview.h"
+  SRCS
+    "profiler/profiler.cc"
+    "profiler/treeview.cc"
+  COPTS
+    ${RUY_COPTS}
+  LINKOPTS
+    ${RUY_LINKOPTS_PTHREAD}
+  DEPS
+    ruy::profiler_instrumentation
+  PUBLIC
+)
+
+external_cc_library(
+  PACKAGE
+    ruy
+  NAME
+    gtest_wrapper
+  ROOT
+    ${RUY_SRC_ROOT}
+  HDRS
+    "gtest_wrapper.h"
+  DEPS
+    iree::testing::gtest
+  PUBLIC
+)
+
+iree_select_compiler_opts(RUY_LINKOPTS_STDLIB_MATH
+  CLANG_OR_GCC
+    -lm
+)
+
+external_cc_library(
+  PACKAGE
+    ruy
+  NAME
+    reference_mul
+  ROOT
+    ${RUY_SRC_ROOT}
+  HDRS
+    "reference_mul.h"
+  COPTS
+    ${RUY_COPTS}
+  DEPS
+    ruy::apply_multiplier
+    ruy::matrix
+    ruy::mul_params
+  PUBLIC
+)
+
+external_cc_library(
+  PACKAGE
+    ruy
+  NAME
+    pmu
+  ROOT
+    ${RUY_SRC_ROOT}
+  HDRS
+    "pmu.h"
+  SRCS
+    "pmu.cc"
+  COPTS
+    ${RUY_COPTS}
+  DEPS
+    ruy::check_macros
+  PUBLIC
+)
+
+external_cc_library(
+  PACKAGE
+    ruy
+  NAME
+    test_lib
+  ROOT
+    ${RUY_SRC_ROOT}
+  HDRS
+    "test.h"
+  COPTS
+    ${RUY_COPTS}
+  LINKOPTS
+    ${RUY_LINKOPTS_STDLIB_MATH}
+  DEPS
+    ruy::allocator
+    ruy::size_util
+    ruy::reference_mul
+    ruy::matrix
+    ruy::pmu
+    ruy::ruy
+    ruy::mul_params
+    ruy::time
+    ruy::gtest_wrapper
+    ruy::platform
+    ruy::context
+    ruy::ctx
+    ruy::context_get_ctx
+    ruy::pack_common
+    ruy::profiler_profiler
+)
+
+iree_cc_binary(
+  NAME
+    benchmark_f32_f32_f32_f32
+  DEPS
+    ruy::test_lib
+    ruy::profiler_profiler
+    ruy::gtest_wrapper
+  SRCS
+    "${RUY_SRC_ROOT}/benchmark.cc"
+  COPTS
+    "-DRUY_TEST_LHSSCALAR=f32"
+    "-DRUY_TEST_RHSSCALAR=f32"
+    "-DRUY_TEST_ACCUMSCALAR=f32"
+    "-DRUY_TEST_DSTSCALAR=f32"
+)
+
+iree_cc_binary(
+  NAME
+    benchmark_i8_i8_i32_i8
+  DEPS
+    ruy::test_lib
+    ruy::profiler_profiler
+    ruy::gtest_wrapper
+  SRCS
+    "${RUY_SRC_ROOT}/benchmark.cc"
+  COPTS
+    "-DRUY_TEST_LHSSCALAR=i8"
+    "-DRUY_TEST_RHSSCALAR=i8"
+    "-DRUY_TEST_ACCUMSCALAR=i32"
+    "-DRUY_TEST_DSTSCALAR=i8"
+)
