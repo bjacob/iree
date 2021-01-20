@@ -15,34 +15,31 @@
 iree_add_all_subdirs()
 
 file(GLOB _GLOB_X_TD LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS *.td)
-
 iree_cc_library(
   NAME
     IR
-  HDRS    
+  HDRS
     "RuyOps.h"
   TEXTUAL_HDRS
     "RuyOpInterface.h.inc"
+    "RuyOps.cpp.inc"
     "RuyOps.h.inc"
-    "RuyOps.cpp.inc"
   SRCS
-    "RuyOps.cpp.inc"
     "RuyOps.cpp"
-    "RuyOpInterface.cpp.inc"
   DEPS
     LLVMSupport
     MLIRIR
+    MLIRParser
     MLIRSideEffectInterfaces
     MLIRStandard
     MLIRSupport
     MLIRTransformUtils
-    MLIRTranslation
   PUBLIC
 )
 
 iree_cc_library(
   NAME
-  RuyDialect
+    RuyDialect
   HDRS
     "RuyDialect.h"
   SRCS
@@ -62,7 +59,6 @@ iree_tablegen_library(
     -gen-op-interface-defs RuyOpInterface.cpp.inc
 )
 
-
 iree_tablegen_library(
   NAME
     RuyOpsGen
@@ -71,13 +67,4 @@ iree_tablegen_library(
   OUTS
     -gen-op-decls RuyOps.h.inc
     -gen-op-defs RuyOps.cpp.inc
-)
-
-iree_tablegen_doc(
-  NAME
-    RuyDialectDocGen
-  TD_FILE
-    "RuyOps.td"
-  OUTS
-    -gen-dialect-doc RuyDialect.md
 )

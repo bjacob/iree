@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,23 @@
 # limitations under the License.
 
 iree_add_all_subdirs()
+
+iree_cc_library(
+  NAME
+    LinalgToRuy
+  SRCS
+    "ConvertMatmulToPaddedMatmul.cpp"
+  DEPS
+    MLIRIR
+    MLIRLinalg
+    MLIRPass
+    MLIRSCF
+    MLIRStandard
+    MLIRTransforms
+    iree::compiler::Dialect::Ruy::IR
+    iree::compiler::Dialect::Ruy::IR::RuyDialect
+  PUBLIC
+)
 
 iree_cc_library(
   NAME
