@@ -20,7 +20,7 @@ iree_cc_library(
   HDRS
     "Passes.h"
   DEPS
-    ::LinalgToRuy
     MLIRPass
+    iree::compiler::Dialect::Ruy::Conversion::LinalgToRuy
   PUBLIC
 )

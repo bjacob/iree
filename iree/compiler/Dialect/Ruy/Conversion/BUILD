@@ -24,7 +24,7 @@ cc_library(
     name = "Conversion",
     hdrs = ["Passes.h"],
     deps = [
-        "//iree/compiler/Dialect/Ruy/Conversion:LinalgToRuy",
+        "//iree/compiler/Dialect/Ruy/Conversion/LinalgToRuy",
         "@llvm-project//mlir:Pass",
     ],
 )

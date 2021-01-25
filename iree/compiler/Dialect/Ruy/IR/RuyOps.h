@@ -16,7 +16,7 @@
 #define IREE_COMPILER_DIALECT_RUY_IR_RUYOPS_H_
 
 #include "mlir/IR/OpDefinition.h"
-#include "mlir/IR/StandardTypes.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
 #define GET_OP_CLASSES
