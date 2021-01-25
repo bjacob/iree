@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "iree/compiler/Dialect/Ruy/IR/RuyOps.h"
+#ifndef IREE_DIALECT_MEH_BASE
+#define IREE_DIALECT_MEH_BASE
 
-#define GET_OP_CLASSES
-#include "iree/compiler/Dialect/Ruy/IR/RuyOps.cpp.inc"
+include "mlir/IR/OpBase.td"
+
+def MEH_Dialect : Dialect {
+  let name = "meh";
+  let cppNamespace = "::mlir::iree_compiler::meh";
+
+   let summary = [{
+    An experimental dialect to represent specific lowerings of matmul oprations
+  }];
+  
+}
+
+class Meh_OP<string mnemonic, list<OpTrait> traits = []> :
+    Op<MEH_Dialect, mnemonic, traits>;
+
+#endif  // IREE_DIALECT_MEH_BASE

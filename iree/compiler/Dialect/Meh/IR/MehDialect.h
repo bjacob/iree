@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2019 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_COMPILER_DIALECT_RUY_CONVERSION_PASSES_H_
-#define IREE_COMPILER_DIALECT_RUY_CONVERSION_PASSES_H_
+#ifndef IREE_COMPILER_DIALECT_MEH_IR_MEHDIALECT_H_
+#define IREE_COMPILER_DIALECT_MEH_IR_MEHDIALECT_H_
 
-#include "mlir/Pass/Pass.h"
+#include "mlir/IR/Dialect.h"
+#include "mlir/IR/OpDefinition.h"
 
 namespace mlir {
 namespace iree_compiler {
-namespace ruy {
-
-// Convert linalg.matmul to ruy.paddedmatmul
-std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass();
-
-inline void registerRuyConversionPasses() {
-  createConvertMatmulToPaddedMatmulPass();
-}
-
-}  // namespace ruy
+namespace meh {
+class MehDialect : public Dialect {
+ public:
+  explicit MehDialect(MLIRContext *context);
+  static StringRef getDialectNamespace() { return "meh"; }
+};
+}  // namespace meh
 }  // namespace iree_compiler
 }  // namespace mlir
 
-#endif  // IREE_COMPILER_DIALECT_RUY_CONVERSION_PASSES_H_
+#endif  // IREE_COMPILER_DIALECT_MEH_IR_MEHDIALECT_H_

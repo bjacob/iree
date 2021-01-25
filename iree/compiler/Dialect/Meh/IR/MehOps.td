@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_DIALECT_RUY_OPS
-#define IREE_DIALECT_RUY_OPS
+#ifndef IREE_DIALECT_MEH_OPS
+#define IREE_DIALECT_MEH_OPS
 
-include "iree/compiler/Dialect/Ruy/IR/RuyBase.td"
+include "iree/compiler/Dialect/Meh/IR/MehBase.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 // Padded matmul op.
-def Ruy_PaddedMatmulOp : Ruy_OP<"padded_matmul", [
+def Meh_PaddedMatmulOp : Meh_OP<"padded_matmul", [
   ]> {
   let arguments = (ins 
     AnyMemRef:$lhs, 
@@ -29,4 +29,4 @@ def Ruy_PaddedMatmulOp : Ruy_OP<"padded_matmul", [
   );
 }
 
-#endif // IREE_DIALECT_RUY_OPS
+#endif // IREE_DIALECT_MEH_OPS

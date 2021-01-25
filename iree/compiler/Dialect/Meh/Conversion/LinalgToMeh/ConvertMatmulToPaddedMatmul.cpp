@@ -15,8 +15,8 @@
 // This is an experimental code for now in experimental branch to play with
 // different lowering of linalg.matmul
 
-#include "iree/compiler/Dialect/Ruy/IR/RuyDialect.h"
-#include "iree/compiler/Dialect/Ruy/IR/RuyOps.h"
+#include "iree/compiler/Dialect/Meh/IR/MehDialect.h"
+#include "iree/compiler/Dialect/Meh/IR/MehOps.h"
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/SCF/EDSC/Builders.h"
 #include "mlir/Dialect/StandardOps/EDSC/Builders.h"
@@ -27,7 +27,7 @@
 
 namespace mlir {
 namespace iree_compiler {
-namespace ruy {
+namespace meh {
 namespace {
 
 class MatmulOpToPaddedMatmulPattern
@@ -37,7 +37,7 @@ class MatmulOpToPaddedMatmulPattern
 
   LogicalResult matchAndRewrite(linalg::MatmulOp op,
                                 PatternRewriter &rewriter) const override {
-    rewriter.create<ruy::PaddedMatmulOp>(op.getLoc(), op.getOperand(0),
+    rewriter.create<meh::PaddedMatmulOp>(op.getLoc(), op.getOperand(0),
                                          op.getOperand(1), op.getOperand(2));
     rewriter.eraseOp(op);
     return success();
@@ -46,17 +46,17 @@ class MatmulOpToPaddedMatmulPattern
 
 /*
 
-lina.ops ----> ruy.ops
+lina.ops ----> meh.ops
 (linalg ops illegal)
 
 
 */
 
-class PaddedMatmulToSCFPattern : public OpRewritePattern<ruy::PaddedMatmulOp> {
+class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
  public:
-  using OpRewritePattern<ruy::PaddedMatmulOp>::OpRewritePattern;
+  using OpRewritePattern<meh::PaddedMatmulOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(ruy::PaddedMatmulOp op,
+  LogicalResult matchAndRewrite(meh::PaddedMatmulOp op,
                                 PatternRewriter &rewriter) const override {
     auto lhsVal = op.lhs();
     auto rhsVal = op.rhs();
@@ -82,7 +82,7 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<ruy::PaddedMatmulOp> {
 
     /*
      func foo(op) {
-       (ruy.padded_matmul) <- rewriter
+       (meh.padded_matmul) <- rewriter
 
      }
     */
@@ -113,7 +113,7 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<ruy::PaddedMatmulOp> {
 struct ConvertMatmulToPaddedMatmulPass
     : public PassWrapper<ConvertMatmulToPaddedMatmulPass, FunctionPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<linalg::LinalgDialect, ruy::RuyDialect, scf::SCFDialect>();
+    registry.insert<linalg::LinalgDialect, meh::MehDialect, scf::SCFDialect>();
   }
   void runOnFunction() override;
 };
@@ -131,8 +131,8 @@ void ConvertMatmulToPaddedMatmulPass::runOnFunction() {
 
   applyPatternsAndFoldGreedily(funcOp, std::move(conversionPatterns));
 
-  /// Ultimately we want a conversion from ruy.padded_matmul -> scf
-  /// so create RuyToSCF directory and add a rewrite pass or even better a
+  /// Ultimately we want a conversion from meh.padded_matmul -> scf
+  /// so create MehToSCF directory and add a rewrite pass or even better a
   /// dialect conversion pass.
 
   OwningRewritePatternList toSCFConversionPatterns;  // list of patterns
@@ -148,10 +148,10 @@ std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass() {
 }
 
 static PassRegistration<ConvertMatmulToPaddedMatmulPass> registration(
-    "convert-linalg-matmul-to-ruy-padded-matmul",
-    "Convert matmul to ruy padded matmul",
+    "convert-linalg-matmul-to-meh-padded-matmul",
+    "Convert matmul to meh padded matmul",
     [] { return std::make_unique<ConvertMatmulToPaddedMatmulPass>(); });
 
-}  // namespace ruy
+}  // namespace meh
 }  // namespace iree_compiler
 }  // namespace mlir

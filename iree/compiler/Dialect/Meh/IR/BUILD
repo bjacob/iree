@@ -21,7 +21,7 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
-exports_files(["RuyBase.td"])
+exports_files(["MehBase.td"])
 
 filegroup(
     name = "td_files",
@@ -31,19 +31,19 @@ filegroup(
 cc_library(
     name = "IR",
     srcs = [
-        "RuyOps.cpp",
+        "MehOps.cpp",
     ],
     hdrs = [
-        "RuyOps.h",
+        "MehOps.h",
     ],
     textual_hdrs = [
-        "RuyOpInterface.h.inc",
-        "RuyOps.h.inc",
-        "RuyOps.cpp.inc",
+        "MehOpInterface.h.inc",
+        "MehOps.h.inc",
+        "MehOps.cpp.inc",
     ],
     deps = [
-        ":RuyOpsGen",
-        ":RuyInterfaceGen",
+        ":MehOpsGen",
+        ":MehInterfaceGen",
         "@llvm-project//llvm:Support",
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Parser",
@@ -55,22 +55,22 @@ cc_library(
 )
 
 cc_library(
-    name = "RuyDialect",
-    srcs = ["RuyDialect.cpp"],
-    hdrs = ["RuyDialect.h"],
+    name = "MehDialect",
+    srcs = ["MehDialect.cpp"],
+    hdrs = ["MehDialect.h"],
     deps = [
         ":IR",
     ],
 )
 
 gentbl(
-    name = "RuyInterfaceGen",
+    name = "MehInterfaceGen",
     tbl_outs = [
-        ("-gen-op-interface-decls", "RuyOpInterface.h.inc"),
-        ("-gen-op-interface-defs", "RuyOpInterface.cpp.inc"),
+        ("-gen-op-interface-decls", "MehOpInterface.h.inc"),
+        ("-gen-op-interface-defs", "MehOpInterface.cpp.inc"),
     ],
     tblgen = "@llvm-project//mlir:mlir-tblgen",
-    td_file = "RuyBase.td",
+    td_file = "MehBase.td",
     td_srcs = [
         ":td_files",
         "@llvm-project//mlir:OpBaseTdFiles",
@@ -79,13 +79,13 @@ gentbl(
 )
 
 gentbl(
-    name = "RuyOpsGen",
+    name = "MehOpsGen",
     tbl_outs = [
-        ("-gen-op-decls", "RuyOps.h.inc"),
-        ("-gen-op-defs", "RuyOps.cpp.inc"),
+        ("-gen-op-decls", "MehOps.h.inc"),
+        ("-gen-op-defs", "MehOps.cpp.inc"),
     ],
     tblgen = "@llvm-project//mlir:mlir-tblgen",
-    td_file = "RuyOps.td",
+    td_file = "MehOps.td",
     td_srcs = [
         ":td_files",
         "@llvm-project//mlir:include/mlir/IR/SymbolInterfaces.td",

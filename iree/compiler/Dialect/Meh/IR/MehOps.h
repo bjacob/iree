@@ -1,4 +1,4 @@
-// Copyright 2019 Google LLC
+// Copyright 2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_DIALECT_RUY_BASE
-#define IREE_DIALECT_RUY_BASE
+#ifndef IREE_COMPILER_DIALECT_MEH_IR_MEHOPS_H_
+#define IREE_COMPILER_DIALECT_MEH_IR_MEHOPS_H_
 
-include "mlir/IR/OpBase.td"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/Interfaces/SideEffectInterfaces.h"
 
-def RUY_Dialect : Dialect {
-  let name = "ruy";
-  let cppNamespace = "::mlir::iree_compiler::ruy";
+#define GET_OP_CLASSES
+#include "iree/compiler/Dialect/Meh/IR/MehOps.h.inc"
 
-   let summary = [{
-    An experimental dialect to represent specific lowerings of matmul oprations
-  }];
-  
-}
-
-class Ruy_OP<string mnemonic, list<OpTrait> traits = []> :
-    Op<RUY_Dialect, mnemonic, traits>;
-
-#endif  // IREE_DIALECT_RUY_BASE
+#endif  // IREE_COMPILER_DIALECT_MEH_IR_MEHOPS_H_

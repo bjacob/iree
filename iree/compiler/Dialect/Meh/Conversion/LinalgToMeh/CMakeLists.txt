@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,11 +16,28 @@ iree_add_all_subdirs()
 
 iree_cc_library(
   NAME
+    LinalgToMeh
+  SRCS
+    "ConvertMatmulToPaddedMatmul.cpp"
+  DEPS
+    MLIRIR
+    MLIRLinalg
+    MLIRPass
+    MLIRSCF
+    MLIRStandard
+    MLIRTransforms
+    iree::compiler::Dialect::Meh::IR
+    iree::compiler::Dialect::Meh::IR::MehDialect
+  PUBLIC
+)
+
+iree_cc_library(
+  NAME
     Conversion
   HDRS
     "Passes.h"
   DEPS
+    ::LinalgToMeh
     MLIRPass
-    iree::compiler::Dialect::Ruy::Conversion::LinalgToRuy
   PUBLIC
 )

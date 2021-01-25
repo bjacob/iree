@@ -16,28 +16,11 @@ iree_add_all_subdirs()
 
 iree_cc_library(
   NAME
-    LinalgToRuy
-  SRCS
-    "ConvertMatmulToPaddedMatmul.cpp"
-  DEPS
-    MLIRIR
-    MLIRLinalg
-    MLIRPass
-    MLIRSCF
-    MLIRStandard
-    MLIRTransforms
-    iree::compiler::Dialect::Ruy::IR
-    iree::compiler::Dialect::Ruy::IR::RuyDialect
-  PUBLIC
-)
-
-iree_cc_library(
-  NAME
     Conversion
   HDRS
     "Passes.h"
   DEPS
-    ::LinalgToRuy
     MLIRPass
+    iree::compiler::Dialect::Meh::Conversion::LinalgToMeh
   PUBLIC
 )

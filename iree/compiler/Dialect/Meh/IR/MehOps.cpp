@@ -12,14 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_COMPILER_DIALECT_RUY_IR_RUYOPS_H_
-#define IREE_COMPILER_DIALECT_RUY_IR_RUYOPS_H_
-
-#include "mlir/IR/OpDefinition.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/Interfaces/SideEffectInterfaces.h"
+#include "iree/compiler/Dialect/Meh/IR/MehOps.h"
 
 #define GET_OP_CLASSES
-#include "iree/compiler/Dialect/Ruy/IR/RuyOps.h.inc"
-
-#endif  // IREE_COMPILER_DIALECT_RUY_IR_RUYOPS_H_
+#include "iree/compiler/Dialect/Meh/IR/MehOps.cpp.inc"

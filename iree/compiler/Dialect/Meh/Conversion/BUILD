@@ -20,12 +20,11 @@ package(
     licenses = ["notice"],  # Apache 2.0
 )
 
-
 cc_library(
     name = "Conversion",
     hdrs = ["Passes.h"],
     deps = [
-        "//iree/compiler/Dialect/Ruy/Conversion/LinalgToRuy",
+        "//iree/compiler/Dialect/Meh/Conversion/LinalgToMeh",
         "@llvm-project//mlir:Pass",
     ],
 )

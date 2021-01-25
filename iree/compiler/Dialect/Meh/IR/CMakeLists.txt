@@ -19,13 +19,13 @@ iree_cc_library(
   NAME
     IR
   HDRS
-    "RuyOps.h"
+    "MehOps.h"
   TEXTUAL_HDRS
-    "RuyOpInterface.h.inc"
-    "RuyOps.cpp.inc"
-    "RuyOps.h.inc"
+    "MehOpInterface.h.inc"
+    "MehOps.cpp.inc"
+    "MehOps.h.inc"
   SRCS
-    "RuyOps.cpp"
+    "MehOps.cpp"
   DEPS
     LLVMSupport
     MLIRIR
@@ -39,11 +39,11 @@ iree_cc_library(
 
 iree_cc_library(
   NAME
-    RuyDialect
+    MehDialect
   HDRS
-    "RuyDialect.h"
+    "MehDialect.h"
   SRCS
-    "RuyDialect.cpp"
+    "MehDialect.cpp"
   DEPS
     ::IR
   PUBLIC
@@ -51,20 +51,20 @@ iree_cc_library(
 
 iree_tablegen_library(
   NAME
-    RuyInterfaceGen
+    MehInterfaceGen
   TD_FILE
-    "RuyBase.td"
+    "MehBase.td"
   OUTS
-    -gen-op-interface-decls RuyOpInterface.h.inc
-    -gen-op-interface-defs RuyOpInterface.cpp.inc
+    -gen-op-interface-decls MehOpInterface.h.inc
+    -gen-op-interface-defs MehOpInterface.cpp.inc
 )
 
 iree_tablegen_library(
   NAME
-    RuyOpsGen
+    MehOpsGen
   TD_FILE
-    "RuyOps.td"
+    "MehOps.td"
   OUTS
-    -gen-op-decls RuyOps.h.inc
-    -gen-op-defs RuyOps.cpp.inc
+    -gen-op-decls MehOps.h.inc
+    -gen-op-defs MehOps.cpp.inc
 )
