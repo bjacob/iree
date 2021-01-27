@@ -113,7 +113,15 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
 struct ConvertMatmulToPaddedMatmulPass
     : public PassWrapper<ConvertMatmulToPaddedMatmulPass, FunctionPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<linalg::LinalgDialect, meh::MehDialect, scf::SCFDialect>();
+    registry.insert<linalg::LinalgDialect, meh::MehDialect>();
+  }
+  void runOnFunction() override;
+};
+
+struct ConvertPaddedMatmulToSCFPass
+    : public PassWrapper<ConvertPaddedMatmulToSCFPass, FunctionPass> {
+  void getDependentDialects(DialectRegistry &registry) const override {
+    registry.insert<meh::MehDialect, scf::SCFDialect>();
   }
   void runOnFunction() override;
 };
@@ -124,33 +132,42 @@ void ConvertMatmulToPaddedMatmulPass::runOnFunction() {
   auto funcOp = getOperation();
   MLIRContext *context = &getContext();
 
-  // List of patterns to run as part of this pass.
   OwningRewritePatternList conversionPatterns;
 
   conversionPatterns.insert<MatmulOpToPaddedMatmulPattern>(context);
 
   applyPatternsAndFoldGreedily(funcOp, std::move(conversionPatterns));
+}
 
-  /// Ultimately we want a conversion from meh.padded_matmul -> scf
-  /// so create MehToSCF directory and add a rewrite pass or even better a
-  /// dialect conversion pass.
+void ConvertPaddedMatmulToSCFPass::runOnFunction() {
+  auto funcOp = getOperation();
+  MLIRContext *context = &getContext();
 
-  OwningRewritePatternList toSCFConversionPatterns;  // list of patterns
-  toSCFConversionPatterns.insert<PaddedMatmulToSCFPattern>(
-      context);  // add your pattern to your list
+  OwningRewritePatternList toSCFConversionPatterns;
+  toSCFConversionPatterns.insert<PaddedMatmulToSCFPattern>(context);
   applyPatternsAndFoldGreedily(
       funcOp,
-      std::move(toSCFConversionPatterns));  // apply the pattern conversion.
+      std::move(toSCFConversionPatterns));
 }
 
 std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass() {
   return std::make_unique<ConvertMatmulToPaddedMatmulPass>();
 }
 
-static PassRegistration<ConvertMatmulToPaddedMatmulPass> registration(
+std::unique_ptr<FunctionPass> createConvertPaddedMatmulToSCFPass() {
+  return std::make_unique<ConvertPaddedMatmulToSCFPass>();
+}
+
+static PassRegistration<ConvertMatmulToPaddedMatmulPass> sConvertMatmulToPaddedMatmulPassRegistration(
     "convert-linalg-matmul-to-meh-padded-matmul",
     "Convert matmul to meh padded matmul",
-    [] { return std::make_unique<ConvertMatmulToPaddedMatmulPass>(); });
+    [] { return createConvertMatmulToPaddedMatmulPass(); });
+
+static PassRegistration<ConvertPaddedMatmulToSCFPass> sConvertPaddedMatmulToSCFPassRegistration(
+    "convert-padded-matmul-to-scf",
+    "Convert meh padded matmul to scf",
+    [] { return createConvertPaddedMatmulToSCFPass(); });
+
 
 }  // namespace meh
 }  // namespace iree_compiler
