@@ -17,27 +17,17 @@ iree_add_all_subdirs()
 iree_cc_library(
   NAME
     LinalgToMeh
+  HDRS
+    "ConvertLinalgToMeh.h"
   SRCS
-    "ConvertMatmulToPaddedMatmul.cpp"
+    "ConvertLinalgToMeh.cpp"
   DEPS
     MLIRIR
     MLIRLinalg
     MLIRPass
-    MLIRSCF
     MLIRStandard
     MLIRTransforms
     iree::compiler::Dialect::Meh::IR
     iree::compiler::Dialect::Meh::IR::MehDialect
-  PUBLIC
-)
-
-iree_cc_library(
-  NAME
-    Conversion
-  HDRS
-    "Passes.h"
-  DEPS
-    ::LinalgToMeh
-    MLIRPass
   PUBLIC
 )

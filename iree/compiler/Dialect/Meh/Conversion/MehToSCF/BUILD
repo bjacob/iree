@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2021 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("//build_tools/embed_data:build_defs.bzl", "cc_embed_data")
-
 package(
     default_visibility = ["//visibility:public"],
     features = ["layering_check"],
@@ -21,10 +19,20 @@ package(
 )
 
 cc_library(
-    name = "Conversion",
-    hdrs = ["Passes.h"],
-    deps = [
-        "//iree/compiler/Dialect/Meh/Conversion/LinalgToMeh",
-        "//iree/compiler/Dialect/Meh/Conversion/MehToSCF",
+    name = "MehToSCF",
+    srcs = [
+        "ConvertMehToSCF.cpp"
     ],
+    hdrs = [
+        "ConvertMehToSCF.h"
+    ],
+    deps = [
+        "@llvm-project//mlir:IR",
+        "@llvm-project//mlir:Pass",
+        "@llvm-project//mlir:StandardOps",
+        "@llvm-project//mlir:SCFDialect",
+        "@llvm-project//mlir:Transforms",
+        "//iree/compiler/Dialect/Meh/IR",
+        "//iree/compiler/Dialect/Meh/IR:MehDialect"
+    ]
 )

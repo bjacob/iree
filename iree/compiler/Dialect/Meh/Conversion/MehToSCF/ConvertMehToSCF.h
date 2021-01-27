@@ -1,4 +1,4 @@
-// Copyright 2020 Google LLC
+// Copyright 2021 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef IREE_COMPILER_DIALECT_MEH_CONVERSION_PASSES_H_
-#define IREE_COMPILER_DIALECT_MEH_CONVERSION_PASSES_H_
+#ifndef IREE_COMPILER_DIALECT_MEH_CONVERSION_MEH_TO_SCF_H_
+#define IREE_COMPILER_DIALECT_MEH_CONVERSION_MEH_TO_SCF_H_
 
 #include "mlir/Pass/Pass.h"
 
@@ -22,14 +22,12 @@ namespace iree_compiler {
 namespace meh {
 
 // Convert linalg.matmul to meh.paddedmatmul
-std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass();
+std::unique_ptr<FunctionPass> createConvertPaddedMatmulToSCFPass();
 
-inline void registerMehConversionPasses() {
-  createConvertMatmulToPaddedMatmulPass();
-}
+void registerConvertPaddedMatmulToSCFPass();
 
 }  // namespace meh
 }  // namespace iree_compiler
 }  // namespace mlir
 
-#endif  // IREE_COMPILER_DIALECT_MEH_CONVERSION_PASSES_H_
+#endif  // IREE_COMPILER_DIALECT_MEH_CONVERSION_MEH_TO_SCF_H_

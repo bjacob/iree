@@ -13,14 +13,3 @@
 # limitations under the License.
 
 iree_add_all_subdirs()
-
-iree_cc_library(
-  NAME
-    Conversion
-  HDRS
-    "Passes.h"
-  DEPS
-    MLIRPass
-    iree::compiler::Dialect::Meh::Conversion::LinalgToMeh
-  PUBLIC
-)

@@ -20,7 +20,7 @@ iree_cc_library(
   HDRS
     "Passes.h"
   DEPS
-    MLIRPass
     iree::compiler::Dialect::Meh::Conversion::LinalgToMeh
+    iree::compiler::Dialect::Meh::Conversion::MehToSCF
   PUBLIC
 )

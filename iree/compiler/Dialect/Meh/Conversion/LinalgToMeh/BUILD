@@ -21,25 +21,18 @@ package(
 cc_library(
     name = "LinalgToMeh",
     srcs = [
-        "ConvertMatmulToPaddedMatmul.cpp"
+        "ConvertLinalgToMeh.cpp"
+    ],
+    hdrs = [
+        "ConvertLinalgToMeh.h"
     ],
     deps = [
         "@llvm-project//mlir:IR",
         "@llvm-project//mlir:Pass",
         "@llvm-project//mlir:LinalgOps",
         "@llvm-project//mlir:StandardOps",
-        "@llvm-project//mlir:SCFDialect",
         "@llvm-project//mlir:Transforms",
         "//iree/compiler/Dialect/Meh/IR",
         "//iree/compiler/Dialect/Meh/IR:MehDialect"
     ]
-)
-
-cc_library(
-    name = "Conversion",
-    hdrs = ["Passes.h"],
-    deps = [
-        ":LinalgToMeh",
-        "@llvm-project//mlir:Pass",
-    ],
 )

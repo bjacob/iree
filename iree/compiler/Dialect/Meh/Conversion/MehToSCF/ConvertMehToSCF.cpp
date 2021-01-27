@@ -15,9 +15,10 @@
 // This is an experimental code for now in experimental branch to play with
 // different lowering of linalg.matmul
 
+#include "iree/compiler/Dialect/Meh/Conversion/MehToSCF/ConvertMehToSCF.h"
+
 #include "iree/compiler/Dialect/Meh/IR/MehDialect.h"
 #include "iree/compiler/Dialect/Meh/IR/MehOps.h"
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/SCF/EDSC/Builders.h"
 #include "mlir/Dialect/StandardOps/EDSC/Builders.h"
 #include "mlir/Dialect/StandardOps/EDSC/Intrinsics.h"
@@ -29,28 +30,6 @@ namespace mlir {
 namespace iree_compiler {
 namespace meh {
 namespace {
-
-class MatmulOpToPaddedMatmulPattern
-    : public OpRewritePattern<linalg::MatmulOp> {
- public:
-  using OpRewritePattern<linalg::MatmulOp>::OpRewritePattern;
-
-  LogicalResult matchAndRewrite(linalg::MatmulOp op,
-                                PatternRewriter &rewriter) const override {
-    rewriter.create<meh::PaddedMatmulOp>(op.getLoc(), op.getOperand(0),
-                                         op.getOperand(1), op.getOperand(2));
-    rewriter.eraseOp(op);
-    return success();
-  }
-};
-
-/*
-
-lina.ops ----> meh.ops
-(linalg ops illegal)
-
-
-*/
 
 class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
  public:
@@ -110,14 +89,6 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
   }
 };
 
-struct ConvertMatmulToPaddedMatmulPass
-    : public PassWrapper<ConvertMatmulToPaddedMatmulPass, FunctionPass> {
-  void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<linalg::LinalgDialect, meh::MehDialect>();
-  }
-  void runOnFunction() override;
-};
-
 struct ConvertPaddedMatmulToSCFPass
     : public PassWrapper<ConvertPaddedMatmulToSCFPass, FunctionPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
@@ -127,17 +98,6 @@ struct ConvertPaddedMatmulToSCFPass
 };
 
 }  // namespace
-
-void ConvertMatmulToPaddedMatmulPass::runOnFunction() {
-  auto funcOp = getOperation();
-  MLIRContext *context = &getContext();
-
-  OwningRewritePatternList conversionPatterns;
-
-  conversionPatterns.insert<MatmulOpToPaddedMatmulPattern>(context);
-
-  applyPatternsAndFoldGreedily(funcOp, std::move(conversionPatterns));
-}
 
 void ConvertPaddedMatmulToSCFPass::runOnFunction() {
   auto funcOp = getOperation();
@@ -150,24 +110,15 @@ void ConvertPaddedMatmulToSCFPass::runOnFunction() {
       std::move(toSCFConversionPatterns));
 }
 
-std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass() {
-  return std::make_unique<ConvertMatmulToPaddedMatmulPass>();
-}
-
 std::unique_ptr<FunctionPass> createConvertPaddedMatmulToSCFPass() {
   return std::make_unique<ConvertPaddedMatmulToSCFPass>();
 }
 
-static PassRegistration<ConvertMatmulToPaddedMatmulPass> sConvertMatmulToPaddedMatmulPassRegistration(
-    "convert-linalg-matmul-to-meh-padded-matmul",
-    "Convert matmul to meh padded matmul",
-    [] { return createConvertMatmulToPaddedMatmulPass(); });
-
-static PassRegistration<ConvertPaddedMatmulToSCFPass> sConvertPaddedMatmulToSCFPassRegistration(
-    "convert-padded-matmul-to-scf",
+void registerConvertPaddedMatmulToSCFPass() {
+  PassRegistration<ConvertPaddedMatmulToSCFPass> registration( "convert-padded-matmul-to-scf",
     "Convert meh padded matmul to scf",
     [] { return createConvertPaddedMatmulToSCFPass(); });
-
+}
 
 }  // namespace meh
 }  // namespace iree_compiler
