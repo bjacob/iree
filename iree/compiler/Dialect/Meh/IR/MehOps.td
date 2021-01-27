@@ -19,8 +19,7 @@ include "iree/compiler/Dialect/Meh/IR/MehBase.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
-// Padded matmul op.
-def Meh_PaddedMatmulOp : Meh_OP<"padded_matmul", [
+def Meh_MatmulOp : Meh_OP<"matmul", [
   ]> {
   let arguments = (ins 
     AnyMemRef:$lhs, 

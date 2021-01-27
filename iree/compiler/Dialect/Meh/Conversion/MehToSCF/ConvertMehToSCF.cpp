@@ -31,11 +31,11 @@ namespace iree_compiler {
 namespace meh {
 namespace {
 
-class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
+class MehMatmulToSCFPattern : public OpRewritePattern<meh::MatmulOp> {
  public:
-  using OpRewritePattern<meh::PaddedMatmulOp>::OpRewritePattern;
+  using OpRewritePattern<meh::MatmulOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(meh::PaddedMatmulOp op,
+  LogicalResult matchAndRewrite(meh::MatmulOp op,
                                 PatternRewriter &rewriter) const override {
     auto lhsVal = op.lhs();
     auto rhsVal = op.rhs();
@@ -49,7 +49,6 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
 
     edsc::ScopedContext scope(rewriter, op.getLoc());
 
-    // dim(0)
     auto K = rhsShape[0];
 
     Value zero = edsc::intrinsics::std_constant_index(0);
@@ -59,17 +58,8 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
     Value boundN = edsc::intrinsics::std_constant_index(N);
     Value boundK = edsc::intrinsics::std_constant_index(K);
 
-    /*
-     func foo(op) {
-       (meh.padded_matmul) <- rewriter
-
-     }
-    */
-
     edsc::loopNestBuilder(zero, boundM, step, [&](Value m) {
       edsc::loopNestBuilder(zero, boundN, step, [&](Value n) {
-        // zero(m, n) =
-
         edsc::loopNestBuilder(zero, boundK, step, [&](Value k) {
           Value lhs_val =
               edsc::intrinsics::std_load(lhsVal, ArrayRef<Value>{m, k});
@@ -89,8 +79,8 @@ class PaddedMatmulToSCFPattern : public OpRewritePattern<meh::PaddedMatmulOp> {
   }
 };
 
-struct ConvertPaddedMatmulToSCFPass
-    : public PassWrapper<ConvertPaddedMatmulToSCFPass, FunctionPass> {
+struct ConvertMehMatmulToSCFPass
+    : public PassWrapper<ConvertMehMatmulToSCFPass, FunctionPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<meh::MehDialect, scf::SCFDialect>();
   }
@@ -99,25 +89,25 @@ struct ConvertPaddedMatmulToSCFPass
 
 }  // namespace
 
-void ConvertPaddedMatmulToSCFPass::runOnFunction() {
+void ConvertMehMatmulToSCFPass::runOnFunction() {
   auto funcOp = getOperation();
   MLIRContext *context = &getContext();
 
   OwningRewritePatternList toSCFConversionPatterns;
-  toSCFConversionPatterns.insert<PaddedMatmulToSCFPattern>(context);
+  toSCFConversionPatterns.insert<MehMatmulToSCFPattern>(context);
   applyPatternsAndFoldGreedily(
       funcOp,
       std::move(toSCFConversionPatterns));
 }
 
-std::unique_ptr<FunctionPass> createConvertPaddedMatmulToSCFPass() {
-  return std::make_unique<ConvertPaddedMatmulToSCFPass>();
+std::unique_ptr<FunctionPass> createConvertMehMatmulToSCFPass() {
+  return std::make_unique<ConvertMehMatmulToSCFPass>();
 }
 
-void registerConvertPaddedMatmulToSCFPass() {
-  PassRegistration<ConvertPaddedMatmulToSCFPass> registration( "convert-padded-matmul-to-scf",
-    "Convert meh padded matmul to scf",
-    [] { return createConvertPaddedMatmulToSCFPass(); });
+void registerConvertMehMatmulToSCFPass() {
+  PassRegistration<ConvertMehMatmulToSCFPass> registration( "convert-meh-matmul-to-scf",
+    "Convert meh matmul to scf",
+    [] { return createConvertMehMatmulToSCFPass(); });
 }
 
 }  // namespace meh

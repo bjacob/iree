@@ -29,30 +29,22 @@ namespace iree_compiler {
 namespace meh {
 namespace {
 
-class MatmulOpToPaddedMatmulPattern
+class LinalgMatmulToMehMatmulPattern
     : public OpRewritePattern<linalg::MatmulOp> {
  public:
   using OpRewritePattern<linalg::MatmulOp>::OpRewritePattern;
 
   LogicalResult matchAndRewrite(linalg::MatmulOp op,
                                 PatternRewriter &rewriter) const override {
-    rewriter.create<meh::PaddedMatmulOp>(op.getLoc(), op.getOperand(0),
-                                         op.getOperand(1), op.getOperand(2));
+    rewriter.create<meh::MatmulOp>(op.getLoc(), op.getOperand(0),
+                                   op.getOperand(1), op.getOperand(2));
     rewriter.eraseOp(op);
     return success();
   }
 };
 
-/*
-
-lina.ops ----> meh.ops
-(linalg ops illegal)
-
-
-*/
-
-struct ConvertMatmulToPaddedMatmulPass
-    : public PassWrapper<ConvertMatmulToPaddedMatmulPass, FunctionPass> {
+struct ConvertLinalgMatmulToMehMatmulPass
+    : public PassWrapper<ConvertLinalgMatmulToMehMatmulPass, FunctionPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
     registry.insert<linalg::LinalgDialect, meh::MehDialect>();
   }
@@ -61,25 +53,25 @@ struct ConvertMatmulToPaddedMatmulPass
 
 }  // namespace
 
-void ConvertMatmulToPaddedMatmulPass::runOnFunction() {
+void ConvertLinalgMatmulToMehMatmulPass::runOnFunction() {
   auto funcOp = getOperation();
   MLIRContext *context = &getContext();
 
   OwningRewritePatternList conversionPatterns;
 
-  conversionPatterns.insert<MatmulOpToPaddedMatmulPattern>(context);
+  conversionPatterns.insert<LinalgMatmulToMehMatmulPattern>(context);
 
   applyPatternsAndFoldGreedily(funcOp, std::move(conversionPatterns));
 }
 
-std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass() {
-  return std::make_unique<ConvertMatmulToPaddedMatmulPass>();
+std::unique_ptr<FunctionPass> createConvertLinalgMatmulToMehMatmulPass() {
+  return std::make_unique<ConvertLinalgMatmulToMehMatmulPass>();
 }
 
-void registerConvertMatmulToPaddedMatmulPass() {
-  PassRegistration<ConvertMatmulToPaddedMatmulPass> registration("convert-linalg-matmul-to-meh-padded-matmul",
-    "Convert matmul to meh padded matmul",
-    [] { return createConvertMatmulToPaddedMatmulPass(); });
+void registerConvertLinalgMatmulToMehMatmulPass() {
+  PassRegistration<ConvertLinalgMatmulToMehMatmulPass> registration("convert-linalg-matmul-to-meh-matmul",
+    "Convert linalg matmul to meh matmul",
+    [] { return createConvertLinalgMatmulToMehMatmulPass(); });
 }
 
 }  // namespace meh

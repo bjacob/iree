@@ -23,8 +23,8 @@ namespace iree_compiler {
 namespace meh {
 
 inline void registerMehPasses() {
-  registerConvertMatmulToPaddedMatmulPass();
-  registerConvertPaddedMatmulToSCFPass();
+  registerConvertLinalgMatmulToMehMatmulPass();
+  registerConvertMehMatmulToSCFPass();
 }
 
 }  // namespace meh

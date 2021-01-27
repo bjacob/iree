@@ -21,10 +21,10 @@ namespace mlir {
 namespace iree_compiler {
 namespace meh {
 
-// Convert linalg.matmul to meh.paddedmatmul
-std::unique_ptr<FunctionPass> createConvertMatmulToPaddedMatmulPass();
+// Convert linalg.matmul to meh.matmul
+std::unique_ptr<FunctionPass> createConvertLinalgMatmulToMehMatmulPass();
 
-void registerConvertMatmulToPaddedMatmulPass();
+void registerConvertLinalgMatmulToMehMatmulPass();
 
 }  // namespace meh
 }  // namespace iree_compiler
