@@ -24,6 +24,10 @@ static llvm::cl::opt<bool> clExportBenchmarkFuncs(
         "unique flow.executable that dispatches with dummy arguments."),
     llvm::cl::init(false));
 
+static llvm::cl::opt<bool> clExportMatmulTestFuncs(
+    "iree-flow-export-matmul-test-funcs",
+    llvm::cl::desc("Exports matmul tests"), llvm::cl::init(false));
+
 // TODO(ravishankarm): Change to a pipeline option.
 static llvm::cl::opt<bool> clTraceDispatchTensors(
     "iree-flow-trace-dispatch-tensors2",
@@ -153,6 +157,10 @@ void buildFlowTransformPassPipeline(OpPassManager &passManager) {
   // exporting all original model entry points.
   if (clExportBenchmarkFuncs) {
     passManager.addPass(createExportBenchmarkFuncsPass());
+  }
+
+  if (clExportMatmulTestFuncs) {
+    passManager.addPass(createExportMatmulTestFuncsPass());
   }
 
   // Inject tracing that logs both input and output tensors from all dispatches.

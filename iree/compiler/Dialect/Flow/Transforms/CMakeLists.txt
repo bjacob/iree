@@ -37,6 +37,7 @@ iree_cc_library(
     "DispatchLinalgOnTensors.cpp"
     "ExpandGlobalDynamicDims.cpp"
     "ExportBenchmarkFuncs.cpp"
+    "ExportMatmulTestFuncs.cpp"
     "FormStreams.cpp"
     "FusionOfTensorOps.cpp"
     "HoistUnstreamableOps.cpp"
