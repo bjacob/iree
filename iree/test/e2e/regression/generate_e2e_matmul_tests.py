@@ -193,17 +193,14 @@ def get_test_generators(shapes_id: ShapesId):
 
 # Generates a name for a test function in the generated MLIR code.
 def function_name(lhs_rhs_type: MatrixElemTypeId, acc_type: MatrixElemTypeId,
-                  shape: TestShape, gen: TestGenerator):
-  dyn = gen.dynamicity.value
-  lhs_g = gen.lhs.value
-  rhs_g = gen.rhs.value
-  acc_g = gen.acc.value
+                  shape: TestShape, dynamicity: Dynamicity):
+  dyn = dynamicity.value
   input_t = lhs_rhs_type.value
   acc_t = acc_type.value
   m = shape.m
   k = shape.k
   n = shape.n
-  return f"{input_t}_{dyn}_{lhs_g}_{m}x{k}_times_{rhs_g}_{k}x{n}_plus_{acc_g}_{acc_t}"
+  return f"{input_t}_{dyn}_{m}x{k}_timess_{k}x{n}_plus_{acc_t}"
 
 
 # Intentionally fixed seed! We want full reproducibility here, both across runs
@@ -319,7 +316,7 @@ def generate(lhs_rhs_type: MatrixElemTypeId, acc_type: MatrixElemTypeId,
   traces = []
   for shape in get_test_shapes(shapes_id):
     for gen in get_test_generators(shapes_id):
-      func_name = function_name(lhs_rhs_type, acc_type, shape, gen)
+      func_name = function_name(lhs_rhs_type, acc_type, shape, gen.dynamicity)
       # Different testcases may differ only by runtime parameters but
       # share the same code. For example, dynamic-shapes testcases
       # share the same code involing tensor<?x?xf32> even though the runtime
