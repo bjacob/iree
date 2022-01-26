@@ -137,7 +137,7 @@ py_binary(
         "--shapes=small",
     ],
     opt_flags = [
-        "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=%d N0=8" % (4 if lhs_rhs_type == "i8" else 1),
+        "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#",
     ],
     target_backends_and_drivers = [
         ("dylib-llvm-aot", "dylib"),
@@ -161,7 +161,7 @@ py_binary(
         "--shapes=large",
     ],
     opt_flags = [
-        "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=%d N0=8" % (4 if lhs_rhs_type == "i8" else 1),
+        "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#",
     ],
     target_backends_and_drivers = [
         ("dylib-llvm-aot", "dylib"),

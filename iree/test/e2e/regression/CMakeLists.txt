@@ -177,7 +177,7 @@ iree_generated_trace_runner_test(
     "dylib"
     "vmvx"
   OPT_FLAGS
-    "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=4 N0=8"
+    "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#"
   TARGET_CPU_FEATURES_VARIANTS
     "default"
     "aarch64:+dotprod"
@@ -200,7 +200,7 @@ iree_generated_trace_runner_test(
     "dylib"
     "vmvx"
   OPT_FLAGS
-    "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=1 N0=8"
+    "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#"
   TARGET_CPU_FEATURES_VARIANTS
     "default"
     "aarch64:+dotprod"
@@ -221,7 +221,7 @@ iree_generated_trace_runner_test(
   DRIVERS
     "dylib"
   OPT_FLAGS
-    "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=4 N0=8"
+    "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#"
   TARGET_CPU_FEATURES_VARIANTS
     "default"
     "aarch64:+dotprod"
@@ -242,7 +242,7 @@ iree_generated_trace_runner_test(
   DRIVERS
     "dylib"
   OPT_FLAGS
-    "--iree-flow-convert-linalg-matmul-to-mmt4d=M0=8 K0=1 N0=8"
+    "--iree-flow-convert-linalg-matmul-to-mmt4d=#target_info_for_each_variant#"
   TARGET_CPU_FEATURES_VARIANTS
     "default"
     "aarch64:+dotprod"
