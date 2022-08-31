@@ -183,14 +183,16 @@ def VMVX_MatmulOp : VMVX_Op<"matmul"> {
     // Lhs buffer.
     VMVX_Buffer:$lhs_buffer,
     VMVX_Index:$lhs_offset,
-    VMVX_Index:$lhs_row_stride,
     // Rhs buffer.
     VMVX_Buffer:$rhs_buffer,
     VMVX_Index:$rhs_offset,
-    VMVX_Index:$rhs_row_stride,
     // Out buffer.
     VMVX_Buffer:$out_buffer,
     VMVX_Index:$out_offset,
+
+    // Strides.
+    VMVX_Index:$lhs_row_stride,
+    VMVX_Index:$rhs_row_stride,
     VMVX_Index:$out_row_stride,
 
     // Dimensions.
@@ -225,14 +227,16 @@ def VMVX_Mmt4dOp : VMVX_Op<"mmt4d"> {
     // Lhs buffer.
     VMVX_Buffer:$lhs_buffer,
     VMVX_Index:$lhs_offset,
-    VMVX_Index:$lhs_row_stride,
     // Rhs buffer.
     VMVX_Buffer:$rhs_buffer,
     VMVX_Index:$rhs_offset,
-    VMVX_Index:$rhs_row_stride,
     // Out buffer.
     VMVX_Buffer:$out_buffer,
     VMVX_Index:$out_offset,
+
+    // Strides.
+    VMVX_Index:$lhs_row_stride,
+    VMVX_Index:$rhs_row_stride,
     VMVX_Index:$out_row_stride,
 
     // Dimensions.

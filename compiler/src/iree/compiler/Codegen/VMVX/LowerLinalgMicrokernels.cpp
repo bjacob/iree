@@ -1016,11 +1016,13 @@ struct LinalgContractionConversion
     rewriter.replaceOpWithNewOp<IREE::VMVX::MatmulOp>(
         info.op,
         // LHS
-        lhsBuffer, lhsDesc.offset, lhsDesc.strides[0],
+        lhsBuffer, lhsDesc.offset,
         // RHS
-        rhsBuffer, rhsDesc.offset, rhsDesc.strides[0],
+        rhsBuffer, rhsDesc.offset,
         // Out
-        outBuffer, outDesc.offset, outDesc.strides[0],
+        outBuffer, outDesc.offset,
+        // strides
+        lhsDesc.strides[0], rhsDesc.strides[0], outDesc.strides[0],
         // m,n,k
         m, n, k,
         // flags
@@ -1050,11 +1052,13 @@ struct LinalgContractionConversion
     rewriter.replaceOpWithNewOp<IREE::VMVX::Mmt4dOp>(
         info.op,
         // LHS
-        lhsBuffer, lhsDesc.offset, lhsDesc.strides[0],
+        lhsBuffer, lhsDesc.offset,
         // RHS
-        rhsBuffer, rhsDesc.offset, rhsDesc.strides[0],
+        rhsBuffer, rhsDesc.offset,
         // Out
-        outBuffer, outDesc.offset, outDesc.strides[0],
+        outBuffer, outDesc.offset,
+        // strides
+        lhsDesc.strides[0], rhsDesc.strides[0], outDesc.strides[0],
         // m,n,k
         m, n, k,
         // m0,n0,k0

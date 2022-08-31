@@ -491,15 +491,15 @@ IREE_VMVX_ABI_EXPORT(iree_vmvx_fill2d_x32, fill2d_x32, v) {
 // Exported matmul function definitions
 //===----------------------------------------------------------------------===//
 
-IREE_VMVX_ABI_FIXED_STRUCT(matmul, rIIrIIrIIIIIi, {
+IREE_VMVX_ABI_FIXED_STRUCT(matmul, rIrIrIIIIIIIi, {
   iree_vm_ref_t lhs_ref;
   int64_t lhs_offset;
-  int64_t lhs_row_stride;
   iree_vm_ref_t rhs_ref;
   int64_t rhs_offset;
-  int64_t rhs_row_stride;
   iree_vm_ref_t out_ref;
   int64_t out_offset;
+  int64_t lhs_row_stride;
+  int64_t rhs_row_stride;
   int64_t out_row_stride;
   int64_t m;
   int64_t n;
@@ -617,15 +617,20 @@ IREE_VMVX_ABI_EXPORT(iree_vmvx_matmul_i8i8i32, matmul, v) {
 // Exported mmt4d function definitions
 //===----------------------------------------------------------------------===//
 
-IREE_VMVX_ABI_FIXED_STRUCT(mmt4d, rIIrIIrIIIIIiiii, {
+IREE_VMVX_ABI_FIXED_STRUCT(mmt4d, rIrIrIIIIIIIiiii, {
+  // First the members that differ from the corresponding builtins' params.
+  // These vm_ref's and corresponding offsets are only used validate and obtain
+  // the underlying data pointers, which is what the builtins take.
   iree_vm_ref_t lhs_ref;
   int64_t lhs_offset;
-  int64_t lhs_row_stride;
   iree_vm_ref_t rhs_ref;
   int64_t rhs_offset;
-  int64_t rhs_row_stride;
   iree_vm_ref_t out_ref;
   int64_t out_offset;
+  // Next, the members that map 1:1 to builtins' params. Keeping them in the
+  // same layout as the builtin param should help generate better code.
+  int64_t lhs_row_stride;
+  int64_t rhs_row_stride;
   int64_t out_row_stride;
   int64_t m;
   int64_t n;
