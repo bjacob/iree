@@ -18,7 +18,6 @@ iree_compiler_cc_library(
     name = "Utils",
     srcs = [
         "ConversionUtils.cpp",
-        "CustomKernelsTargetInfo.cpp",
         "FlatbufferUtils.cpp",
         "ModuleUtils.cpp",
         "OptionUtils.cpp",
@@ -28,7 +27,6 @@ iree_compiler_cc_library(
     ],
     hdrs = [
         "ConversionUtils.h",
-        "CustomKernelsTargetInfo.h",
         "FlatbufferUtils.h",
         "IndexSet.h",
         "ModuleUtils.h",
