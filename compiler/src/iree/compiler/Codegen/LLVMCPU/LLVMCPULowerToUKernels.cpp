@@ -4,13 +4,13 @@
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+#include "iree-dialects/Dialect/LinalgExt/IR/LinalgExtOps.h"
 #include "iree/builtins/ukernel/exported_bits.h"
 #include "iree/compiler/Codegen/Dialect/IREECodegenDialect.h"
 #include "iree/compiler/Codegen/Dialect/IREECodegenOps.h"
 #include "iree/compiler/Codegen/Dialect/UKernelOps.h"
 #include "iree/compiler/Codegen/LLVMCPU/PassDetail.h"
 #include "iree/compiler/Codegen/LLVMCPU/Passes.h"
-#include "iree/compiler/Codegen/Utils/EncodingUtils.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
@@ -21,6 +21,7 @@
 #include "mlir/IR/Matchers.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+
 namespace mlir {
 namespace iree_compiler {
 
@@ -364,36 +365,34 @@ matchDAGForUKernel(RewriterBase &rewriter, IREE::Codegen::QueryTileSizesOp op) {
   if (tensorType.getRank() != 2) {
     return rewriter.notifyMatchFailure(op, "only the 2D case is implemented");
   }
-  auto encoding = getEncoding(tensorType);
+  auto encoding = tensorType.getEncoding()
+                      .dyn_cast_or_null<IREE::LinalgExt::EncodingAttr>();
   if (!encoding) {
     return rewriter.notifyMatchFailure(op, "no TensorEncoding attribute");
   }
-  auto matmulType = getMatmulType(*encoding);
-  auto matmulOperandRole = getMatmulOperandRole(*encoding);
-  if (!matmulType || !matmulOperandRole) {
-    return rewriter.notifyMatchFailure(op, "unhandled TensorEncoding");
-  }
+  auto opKind = encoding.getOpKind().getValue();
+  auto role = encoding.getRole().getValue();
   uint32_t flags = 0;
-  if (*matmulType == MatmulType::F32F32F32) {
+  if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_F32F32F32) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_F32F32F32;
-  } else if (*matmulType == MatmulType::I8I8I32) {
+  } else if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_I8I8I32) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_I8I8I32;
-  } else if (*matmulType == MatmulType::F16F16F32) {
+  } else if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_F16F16F32) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_F16F16F32;
-  } else if (*matmulType == MatmulType::F16F16F16) {
+  } else if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_F16F16F16) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_F16F16F16;
-  } else if (*matmulType == MatmulType::BF16BF16F32) {
+  } else if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_BF16BF16F32) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_BF16BF16F32;
-  } else if (*matmulType == MatmulType::BF16BF16BF16) {
+  } else if (opKind == IREE::LinalgExt::EncodingOpKind::MATMUL_BF16BF16BF16) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERATION_MATMUL_BF16BF16BF16;
   } else {
     return failure();
   }
-  if (*matmulOperandRole == MatmulOperandRole::LHS) {
+  if (role == IREE::LinalgExt::EncodingRole::LHS) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERAND_ROLE_LHS;
-  } else if (*matmulOperandRole == MatmulOperandRole::RHS) {
+  } else if (role == IREE::LinalgExt::EncodingRole::RHS) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERAND_ROLE_RHS;
-  } else if (*matmulOperandRole == MatmulOperandRole::RESULT) {
+  } else if (role == IREE::LinalgExt::EncodingRole::RESULT) {
     flags |= IREE_UK_FLAG_QUERY_TILE_SIZES_OPERAND_ROLE_RESULT;
   } else {
     return failure();

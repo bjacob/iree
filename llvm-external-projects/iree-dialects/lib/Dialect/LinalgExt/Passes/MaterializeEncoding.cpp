@@ -26,27 +26,13 @@ using namespace mlir::iree_compiler::IREE::LinalgExt;
 // Utility methods
 //===---------------------------------------------------------------------===//
 
-/// Extract encoding from the `tensorType` if specified.
-static std::optional<TensorEncoding> getEncoding(RankedTensorType tensorType) {
-  auto encoding = tensorType.getEncoding();
-  if (!encoding) {
-    return std::nullopt;
-  }
-  auto tensorEncodingAttr = encoding.dyn_cast_or_null<TensorEncodingAttr>();
-  if (!tensorEncodingAttr) {
-    return std::nullopt;
-  }
-  return tensorEncodingAttr.getValue();
-}
-
 /// For a given tensor type with an encoding, return the materialized
 /// type to use for it. If no encoding is set, then return the tensor type
 /// itself.
 static RankedTensorType
 getMaterializedType(RankedTensorType tensorType,
                     MaterializeEncodingFn materializeEncodingFn) {
-  std::optional<TensorEncoding> encoding = getEncoding(tensorType);
-  if (!encoding)
+  if (!tensorType.getEncoding().dyn_cast_or_null<EncodingAttr>())
     return tensorType;
   FailureOr<MaterializeEncodingInfo> materializeEncodingInfo =
       materializeEncodingFn(tensorType);
@@ -77,20 +63,18 @@ getMaterializedType(RankedTensorType tensorType,
 // iree/compiler/src/iree/compiler/Codegen/Common/MaterializeEncodingPass.cpp
 static FailureOr<MaterializeEncodingInfo>
 chooseEncodingInfo(RankedTensorType tensorType) {
-  std::optional<TensorEncoding> encoding = getEncoding(tensorType);
+  auto encoding = tensorType.getEncoding().dyn_cast_or_null<EncodingAttr>();
   if (!encoding)
     return failure();
-  switch (*encoding) {
-  case TensorEncoding::MATMUL_F32F32F32_LHS:
-  case TensorEncoding::MATMUL_I8I8I32_LHS:
+  auto role = encoding.getRole().getValue();
+  switch (role) {
+  case EncodingRole::LHS:
     return MaterializeEncodingInfo{{0, 1}, {8, 4}, {}};
     break;
-  case TensorEncoding::MATMUL_F32F32F32_RHS:
-  case TensorEncoding::MATMUL_I8I8I32_RHS:
+  case EncodingRole::RHS:
     return MaterializeEncodingInfo{{1, 0}, {8, 4}, {1, 0}};
     break;
-  case TensorEncoding::MATMUL_F32F32F32_RESULT:
-  case TensorEncoding::MATMUL_I8I8I32_RESULT:
+  case EncodingRole::RESULT:
     return MaterializeEncodingInfo{{0, 1}, {8, 8}, {}};
     break;
   default:
@@ -142,7 +126,7 @@ static FailureOr<tensor::PackOp> lowerSetEncodingOpToPackOp(
     return rewriter.notifyMatchFailure(
         encodingOp, "failed to generate runtime tile size query");
   }
-  std::optional<TensorEncoding> encoding = getEncoding(resultType);
+  auto encoding = resultType.getEncoding().dyn_cast_or_null<EncodingAttr>();
   if (!encoding)
     return failure();
   SmallVector<OpFoldResult> resultDims = tensor::PackOp::getResultShape(
@@ -189,9 +173,9 @@ static FailureOr<tensor::UnPackOp> lowerUnsetEncodingToUnpackOp(
 }
 
 /// Utility method to convert from `linalg.matmul` with
-/// - lhs encoding of MATMUL_*_LHS
-/// - rhs encoding of MATMUL_*_RHS
-/// - result encoding of MATMUL_*_RESULT
+/// - lhs encoding with role=LHS
+/// - rhs encoding with role=RHS
+/// - result encoding with role=RESULT
 /// to linalg.mmt4d op.
 static FailureOr<Operation *>
 lowerOpWithEncoding(RewriterBase &rewriter, linalg::MatmulOp matmulOp,
@@ -202,13 +186,33 @@ lowerOpWithEncoding(RewriterBase &rewriter, linalg::MatmulOp matmulOp,
     return failure();
   auto inputs = matmulOp.getDpsInputOperands();
   auto outputs = matmulOp.getDpsInitOperands();
-  std::optional<TensorEncoding> lhsEncoding =
-      getEncoding(inputs[0]->get().getType().cast<RankedTensorType>());
-  std::optional<TensorEncoding> rhsEncoding =
-      getEncoding(inputs[1]->get().getType().cast<RankedTensorType>());
-  std::optional<TensorEncoding> resultEncoding =
-      getEncoding(outputs[0]->get().getType().cast<RankedTensorType>());
+  auto lhsEncoding = inputs[0]
+                         ->get()
+                         .getType()
+                         .cast<RankedTensorType>()
+                         .getEncoding()
+                         .dyn_cast_or_null<EncodingAttr>();
+  auto rhsEncoding = inputs[1]
+                         ->get()
+                         .getType()
+                         .cast<RankedTensorType>()
+                         .getEncoding()
+                         .dyn_cast_or_null<EncodingAttr>();
+  auto resultEncoding = outputs[0]
+                            ->get()
+                            .getType()
+                            .cast<RankedTensorType>()
+                            .getEncoding()
+                            .dyn_cast_or_null<EncodingAttr>();
   if (!lhsEncoding || !rhsEncoding || !resultEncoding) {
+    return failure();
+  }
+  if (lhsEncoding.getRole().getValue() !=
+          mlir::iree_compiler::IREE::LinalgExt::EncodingRole::LHS ||
+      rhsEncoding.getRole().getValue() !=
+          mlir::iree_compiler::IREE::LinalgExt::EncodingRole::RHS ||
+      resultEncoding.getRole().getValue() !=
+          mlir::iree_compiler::IREE::LinalgExt::EncodingRole::RESULT) {
     return failure();
   }
   Operation *mmt4DOp = rewriter.create<linalg::Mmt4DOp>(
