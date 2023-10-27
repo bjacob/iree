@@ -73,10 +73,8 @@ void buildGlobalOptimizationPassPipeline(
       // this pass both before unit dim folding + consteval, as well as after.
       .addPass(IREE::Flow::createRaiseSpecialOps)
       .addPass(IREE::Flow::createFoldUnitExtentDimsPass)
-      .addPass([&]() {
-        return createFuseDequantizationMatmulPass(
-            clEnableQuantizedMatmulReassociation);
-      })
+      .addPredicatedPass(clEnableQuantizedMatmulReassociation,
+                         createReassociateQuantizedMatmulPass)
       .addPass(createLiftGenericToTransposeBatchMatmulPass)
       .addPass(mlir::createCanonicalizerPass)
       .addPass(mlir::createCSEPass);
