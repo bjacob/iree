@@ -648,11 +648,6 @@ isFusableWithProducer(OpOperand &operand,
     return false;
   }
 
-  // Always fuse dequant to consumer since it's not very useful by itself.
-  if (isDequantizationLikeOp(producer)) {
-    return true;
-  }
-
   auto consumerLinalgOp = cast<linalg::LinalgOp>(consumer);
   if (!consumerLinalgOp.isDpsInit(&operand)) {
     return false;
@@ -745,7 +740,8 @@ decideFusableLinalgOps(Region &region, DominanceInfo const &dominanceInfo,
     SmallVector<Operation *> roots;
     for (Operation &op : llvm::reverse(block)) {
       // If it is part of a fusion group or root op, ignore it.
-      if (hasFusionGroupsAttribute(&op) || hasRootOpAttribute(&op))
+      if (hasFusionGroupsAttribute(&op) || hasRootOpAttribute(&op) ||
+          isDequantizationLikeOp(&op))
         continue;
       // Only look for Linalg ops here. Avoid moving `linalg.fill` that aren't
       // fused with anything else into their own dispatches since it is better

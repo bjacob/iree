@@ -723,6 +723,9 @@ bool Flow::isClonableIntoDispatchOp(Operation *op) {
           tensor::ExtractSliceOp, complex::CreateOp>(op)) {
     return true;
   }
+  if (isDequantizationLikeOp(op)) {
+    return true;
+  }
   if (isa<arith::ConstantOp>(op) || isa<complex::ConstantOp>(op)) {
     if (clInlineConstantByteLength == 0)
       return false;
