@@ -52,13 +52,68 @@ iree_uk_mmt4d_tile_f32f32f32_1x16x1_to_16x16x1_x86_64_avx512_base(
   }
 }
 
-IREE_UK_MMT4D_TILE_FUNC_IMPL_FOR_M0_1_2_4_8_16(
+IREE_UK_MMT4D_TILE_FUNC_IMPL_FOR_M0_1_2_4_8(
     iree_uk_mmt4d_tile_f32f32f32_1x16x1_to_16x16x1_x86_64_avx512_base,
     iree_uk_mmt4d_tile_f32f32f32_1x16x1_x86_64_avx512_base,
     iree_uk_mmt4d_tile_f32f32f32_2x16x1_x86_64_avx512_base,
     iree_uk_mmt4d_tile_f32f32f32_4x16x1_x86_64_avx512_base,
-    iree_uk_mmt4d_tile_f32f32f32_8x16x1_x86_64_avx512_base,
-    iree_uk_mmt4d_tile_f32f32f32_16x16x1_x86_64_avx512_base)
+    iree_uk_mmt4d_tile_f32f32f32_8x16x1_x86_64_avx512_base)
+
+void
+iree_uk_mmt4d_tile_f32f32f32_16x16x1_x86_64_avx512_base(
+    void* IREE_UK_RESTRICT out_tile, const void* IREE_UK_RESTRICT lhs_panel,
+    const void* IREE_UK_RESTRICT rhs_panel,
+    const iree_uk_mmt4d_params_t* params) {
+  float* IREE_UK_RESTRICT out_ptr = out_tile;
+  const float* IREE_UK_RESTRICT lhs_ptr = lhs_panel;
+  const float* IREE_UK_RESTRICT rhs_ptr = rhs_panel;
+  // The prefetches in this function are motivated by benchmarking on
+  // Skylake; their effect was a > 1.3x speedup on 1024x1024 matmuls. The
+  // prefetch-ahead offset of 128*sizeof(float) in the loop was empirically
+  // determined. Similar prefetches did not produce any benefit in other
+  // kernels, even though they are very similar to this one.
+  _mm_prefetch((const char*)lhs_ptr, _MM_HINT_T0);
+  _mm_prefetch((const char*)rhs_ptr, _MM_HINT_T0);
+  __m512 acc[16];
+  if (params->flags & IREE_UK_FLAG_MMT4D_ACCUMULATE) {
+    for (int i = 0; i < 16; ++i) {
+      acc[i] = _mm512_loadu_ps(out_ptr + i * 16);
+    }
+  } else {
+    for (int i = 0; i < 16; ++i) {
+      acc[i] = _mm512_setzero_ps();
+    }
+  }
+
+  for (iree_uk_int32_t k = 0; k < params->K; ++k) {
+    __m512 rhs = _mm512_loadu_ps(rhs_ptr);
+    _mm_prefetch((const char*)(rhs_ptr + 128), _MM_HINT_T0);
+    rhs_ptr += 16;
+    acc[0] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[0]), rhs, acc[0]);
+    acc[1] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[1]), rhs, acc[1]);
+    acc[2] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[2]), rhs, acc[2]);
+    acc[3] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[3]), rhs, acc[3]);
+    acc[4] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[4]), rhs, acc[4]);
+    acc[5] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[5]), rhs, acc[5]);
+    acc[6] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[6]), rhs, acc[6]);
+    acc[7] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[7]), rhs, acc[7]);
+    acc[8] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[8]), rhs, acc[8]);
+    acc[9] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[9]), rhs, acc[9]);
+    acc[10] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[10]), rhs, acc[10]);
+    acc[11] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[11]), rhs, acc[11]);
+    acc[12] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[12]), rhs, acc[12]);
+    acc[13] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[13]), rhs, acc[13]);
+    acc[14] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[14]), rhs, acc[14]);
+    acc[15] = _mm512_fmadd_ps(_mm512_set1_ps(lhs_ptr[15]), rhs, acc[15]);
+    
+    _mm_prefetch((const char*)(lhs_ptr + 128), _MM_HINT_T0);
+    lhs_ptr += 16;
+  }
+
+  for (int i = 0; i < 16; ++i) {
+    _mm512_storeu_ps(out_ptr + i * 16, acc[i]);
+  }
+}
 
 // Shared implementation for f16f16f16 and f16f16f32.
 // In the f16f16f16 case, intermediate roundings are skipped. This function

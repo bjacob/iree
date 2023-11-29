@@ -155,7 +155,7 @@ function(iree_cuda_bitcode_library)
     "-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
     # Optimized and unstamped.
-    "-O3"
+    "-O2"
 
     # Object file only in bitcode format:
     "-c"

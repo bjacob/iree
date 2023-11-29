@@ -387,10 +387,99 @@ void iree_uk_mmt4d_tile_s16u4s32_1x16x8_x86_64_avx512_vnni(
       out_tile, lhs_panel, rhs_panel, params, 16);
 }
 
-void iree_uk_mmt4d_tile_s16u4s32_1x32x8_x86_64_avx512_vnni(
+void
+iree_uk_mmt4d_tile_s16u4s32_1x32x8_x86_64_avx512_vnni(
     void* IREE_UK_RESTRICT out_tile, const void* IREE_UK_RESTRICT lhs_panel,
     const void* IREE_UK_RESTRICT rhs_panel,
     const iree_uk_mmt4d_params_t* params) {
-  iree_uk_mmt4d_tile_s16u4s32_1x16x8_to_1x32x8_x86_64_avx512_vnni(
-      out_tile, lhs_panel, rhs_panel, params, 32);
+  iree_uk_int32_t* IREE_UK_RESTRICT out_ptr = out_tile;
+  const iree_uk_int16_t* IREE_UK_RESTRICT lhs_ptr = lhs_panel;
+  const iree_uk_uint8_t* IREE_UK_RESTRICT rhs_ptr = rhs_panel;
+  // acc[4 * i] is the actual accumulator.
+  // The other acc[4 * i + j] are only used internally in the accumulation loop.
+  __m512i acc[8];
+  if (params->flags & IREE_UK_FLAG_MMT4D_ACCUMULATE) {
+    acc[4 * 0] = _mm512_loadu_si512((const __m512i*)(out_ptr + 16 * 0));
+    acc[4 * 1] = _mm512_loadu_si512((const __m512i*)(out_ptr + 16 * 1));
+  } else {
+    acc[4 * 0] = _mm512_setzero_si512();
+    acc[4 * 1] = _mm512_setzero_si512();
+  }
+  acc[4 * 0 + 1] = _mm512_setzero_si512();
+  acc[4 * 0 + 2] = _mm512_setzero_si512();
+  acc[4 * 0 + 3] = _mm512_setzero_si512();
+  acc[4 * 1 + 1] = _mm512_setzero_si512();
+  acc[4 * 1 + 2] = _mm512_setzero_si512();
+  acc[4 * 1 + 3] = _mm512_setzero_si512();
+
+  const __m128i idx_0_mod_4 = _mm_set1_epi32(0x0c080400);
+  const __m128i idx_1_mod_4 = _mm_set1_epi32(0x0d090501);
+  const __m128i idx_2_mod_4 = _mm_set1_epi32(0x0e0a0602);
+  const __m128i idx_3_mod_4 = _mm_set1_epi32(0x0f0b0703);
+  const __m512i mask_0f = _mm512_set1_epi8(0x0f);
+  IREE_UK_ASSUME(params->K >= 1);
+  for (iree_uk_int32_t k = 0; k < params->K; ++k) {
+    // Load 8xs16 LHS data.
+    __m128i lhs = _mm_loadu_si128((const __m128i*)lhs_ptr);
+    lhs_ptr += 8;
+    // Extract the even/odd s16 lanes and within them, the low/high 8bit parts,
+    // and broadcast into 512bit registers to multiply against RHS data.
+    __m512i lhs_even_s16_low_u8 =
+        _mm512_broadcastq_epi64(_mm_shuffle_epi8(lhs, idx_0_mod_4));
+    __m512i lhs_even_s16_high_s8 =
+        _mm512_broadcastq_epi64(_mm_shuffle_epi8(lhs, idx_1_mod_4));
+    __m512i lhs_odd_s16_low_u8 =
+        _mm512_broadcastq_epi64(_mm_shuffle_epi8(lhs, idx_2_mod_4));
+    __m512i lhs_odd_s16_high_s8 =
+        _mm512_broadcastq_epi64(_mm_shuffle_epi8(lhs, idx_3_mod_4));
+    // Load 8x16xu4 RHS data.
+    __m512i rhs[2];
+    rhs[0] = _mm512_loadu_si512((const __m512i*)(rhs_ptr + 64 * 0));
+    rhs[1] = _mm512_loadu_si512((const __m512i*)(rhs_ptr + 64 * 1));
+    rhs_ptr += 32 * 4;
+    // Extract the even/odd u4 lanes.
+    __m512i rhs_even_u4[2];
+    __m512i rhs_odd_u4[2];
+    rhs_even_u4[0] = _mm512_and_si512(mask_0f, rhs[0]);
+    rhs_odd_u4[0] = _mm512_and_si512(mask_0f, _mm512_srli_epi16(rhs[0], 4));
+    rhs_even_u4[1] = _mm512_and_si512(mask_0f, rhs[1]);
+    rhs_odd_u4[1] = _mm512_and_si512(mask_0f, _mm512_srli_epi16(rhs[1], 4));
+    // Arithmetic. See the comment at the top of this kernel for an explanation.
+    // _mm512_dpbusd_epi32 takes an unsigned LHS and a signed RHS. The parameter
+    // order in each call is adapted to that constraint.
+      acc[4 * 0 + 0] = _mm512_dpbusd_epi32(acc[4 * 0 + 0], lhs_even_s16_low_u8,
+                                           rhs_even_u4[0]);
+      acc[4 * 0 + 1] = _mm512_dpbusd_epi32(acc[4 * 0 + 1], rhs_even_u4[0],
+                                           lhs_even_s16_high_s8);
+      acc[4 * 0 + 2] = _mm512_dpbusd_epi32(acc[4 * 0 + 2], lhs_odd_s16_low_u8,
+                                           rhs_odd_u4[0]);
+      acc[4 * 0 + 3] = _mm512_dpbusd_epi32(acc[4 * 0 + 3], rhs_odd_u4[0],
+                                           lhs_odd_s16_high_s8);
+      acc[4 * 1 + 0] = _mm512_dpbusd_epi32(acc[4 * 1 + 0], lhs_even_s16_low_u8,
+                                           rhs_even_u4[1]);
+      acc[4 * 1 + 1] = _mm512_dpbusd_epi32(acc[4 * 1 + 1], rhs_even_u4[1],
+                                           lhs_even_s16_high_s8);
+      acc[4 * 1 + 2] = _mm512_dpbusd_epi32(acc[4 * 1 + 2], lhs_odd_s16_low_u8,
+                                           rhs_odd_u4[1]);
+      acc[4 * 1 + 3] = _mm512_dpbusd_epi32(acc[4 * 1 + 3], rhs_odd_u4[1],
+                                           lhs_odd_s16_high_s8);
+  }
+
+  // The accumulators that contain products against high 8bit parts of s16 LHS
+  // values need to be left-shifted by 8 bits to account for that.
+  for (int i = 0; i < 32 / 16; ++i) {
+    acc[4 * i + 1] = _mm512_slli_epi32(acc[4 * i + 1], 8);
+    acc[4 * i + 3] = _mm512_slli_epi32(acc[4 * i + 3], 8);
+  }
+
+  // Add accumulators together.
+  for (int i = 0; i < 32 / 16; ++i) {
+    for (int j = 1; j <= 3; ++j) {
+      acc[4 * i + 0] = _mm512_add_epi32(acc[4 * i + 0], acc[4 * i + j]);
+    }
+  }
+
+  for (int i = 0; i < 32 / 16; ++i) {
+    _mm512_storeu_si512((__m512i*)(out_ptr + 16 * i), acc[4 * i]);
+  }
 }
