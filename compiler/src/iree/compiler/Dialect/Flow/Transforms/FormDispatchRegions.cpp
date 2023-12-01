@@ -15,6 +15,7 @@
 #include "iree/compiler/Dialect/Flow/Transforms/RegionOpUtils.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/TypeSwitch.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/Debug.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -23,6 +24,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Utils/StructuredOpsUtils.h"
+#include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -30,6 +32,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/Value.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Interfaces/TilingInterface.h"
 #include "mlir/Pass/Pass.h"
@@ -167,6 +170,49 @@ static void removeFusionGroupsAttribute(Operation *op) {
 // Op property charecterizations
 //===----------------------------------------------------------------------===//
 
+/// Returns true if the linalgOp is fusable with an unpack producer
+static bool isFusableWithUnpack(linalg::LinalgOp linalgOp,
+                                Operation *producer) {
+  auto unpack = dyn_cast<tensor::UnPackOp>(producer);
+  if (!unpack) {
+    return false;
+  }
+  SmallVector<unsigned> reductionShapeIndices;
+  AffineMap map;
+  for (auto &use : producer->getResult(0).getUses()) {
+    if (use.getOwner() == linalgOp) {
+      map = linalgOp.getMatchingIndexingMap(&use);
+      break;
+    }
+  }
+  if (!map) {
+    return false;
+  }
+  auto iterators = linalgOp.getIteratorTypesArray();
+  auto reduction = utils::IteratorType::reduction;
+  for (auto expr : llvm::enumerate(map.getResults())) {
+    auto dim = dyn_cast<AffineDimExpr>(expr.value());
+    if (!dim) {
+      return false;
+    }
+    unsigned pos = dim.getPosition();
+    if (iterators[pos] == reduction &&
+        llvm::any_of(unpack.getInnerDimsPos(),
+                     [expr](int64_t idp) { return expr.index() == idp; })) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Returns true if the linalgOp is fusable with an unpack producer
+static bool hasFusableUnpackProducer(linalg::LinalgOp linalgOp) {
+  return llvm::any_of(linalgOp->getOperands(), [&](Value operand) {
+    auto producer = operand.getDefiningOp<tensor::UnPackOp>();
+    return producer && isFusableWithUnpack(linalgOp, producer);
+  });
+}
+
 /// Operations that are treated as root operations for dispatch region
 /// formation.
 static bool isRootOp(Operation *op) {
@@ -177,7 +223,8 @@ static bool isRootOp(Operation *op) {
   // op.
   if (auto linalgOp = dyn_cast<linalg::LinalgOp>(op)) {
     if (isa<linalg::GenericOp>(op)) {
-      return linalgOp.getNumReductionLoops() != 0;
+      return linalgOp.getNumReductionLoops() != 0 &&
+             !hasFusableUnpackProducer(linalgOp);
     }
     return !isa<linalg::FillOp>(op);
   }
@@ -494,6 +541,9 @@ isFusableWithConsumer(OpOperand &fusedOperand,
     // Fuse `unset_encoding/unpack` -> elementwise operations for now. This
     // could be generalized, but unpack fusion code-generation is harder.
     if (auto consumerLinalgOp = dyn_cast<linalg::LinalgOp>(consumer)) {
+      if (isFusableWithUnpack(consumerLinalgOp, producer)) {
+        return true;
+      }
       return linalg::isElementwise(consumerLinalgOp) &&
              consumerLinalgOp.getNumLoops() ==
                  llvm::cast<RankedTensorType>(producer->getResult(0).getType())
