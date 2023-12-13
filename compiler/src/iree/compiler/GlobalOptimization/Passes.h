@@ -92,7 +92,7 @@ std::unique_ptr<Pass> createOptimizeNumericsPass();
 
 // Create a pass to raise sequence of ops to higher level linalg.ext
 // representation.
-std::unique_ptr<Pass> createRaiseSpecialOps();
+std::unique_ptr<Pass> createRaiseSpecialOps(bool dataTiling = false);
 
 // Removes tensors that have 0-extents.
 std::unique_ptr<InterfacePass<mlir::FunctionOpInterface>>
