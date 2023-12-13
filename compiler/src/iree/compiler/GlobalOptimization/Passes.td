@@ -106,6 +106,11 @@ def RaiseSpecialOps :
     Pass<"iree-global-opt-raise-special-ops", ""> {
   let summary = "raise special ops like softmax to the high level linalg.ext representation";
   let constructor = "mlir::iree_compiler::GlobalOptimization::createRaiseSpecialOps()";
+  let options = [
+    Option<"dataTiling", "data-tiling", "bool",
+           /*default=*/"false",
+           "Indicates whether data tiling is enabled">,
+  ];
 }
 
 def RemoveZeroExtentTensors :
