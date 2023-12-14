@@ -360,6 +360,12 @@ public:
           genericOp, "Operands do not have RankedTensorType\n\n");
     }
 
+    if (lhsType.getElementTypeBitWidth() == outType.getElementTypeBitWidth() &&
+        rhsType.getElementTypeBitWidth() == outType.getElementTypeBitWidth()) {
+      return rewriter.notifyMatchFailure(genericOp,
+                                         "Neither operand is quantized\n\n");
+    }
+
     if (failed(hasMatmulBody(rewriter, genericOp))) {
       return rewriter.notifyMatchFailure(
           genericOp, "genericOp does not have a matmul body\n\n");
