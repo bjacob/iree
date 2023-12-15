@@ -33,6 +33,12 @@ static llvm::cl::opt<bool> clEnableExpandVectors(
     llvm::cl::desc("Enables vector expansion in vector/matrix operations."),
     llvm::cl::init(false));
 
+static llvm::cl::opt<bool> clEnableDemoteContractionInputsToBF16(
+    "iree-global-opt-enable-demote-contraction-inputs-to-bf16",
+    llvm::cl::desc(
+        "Demote inputs (LHS, RHS) of linalg matmul-like ops from f32 to bf16."),
+    llvm::cl::init(false));
+
 void buildGlobalOptExprHoistingPassPipeline(
     OpPassManager &passManager, const TransformOptions &transformOptions) {
   IREE::Util::ExprHoistingOptions options;
@@ -107,6 +113,8 @@ void buildGlobalOptimizationPassPipeline(
       .addPass(IREE::Flow::createFoldUnitExtentDimsPass)
       .addPredicatedPass(clEnableFuseSiluHorizontalMatmul,
                          createFuseSiluHorizontalMatmulPass)
+      .addPredicatedPass(clEnableDemoteContractionInputsToBF16,
+                         createDemoteContractionInputsToBF16Pass)
       .addPass([&]() {
         return createFuseDequantizationMatmulPass(
             clEnableQuantizedMatmulReassociation);
