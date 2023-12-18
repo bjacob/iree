@@ -1043,7 +1043,7 @@ void ConvertToLLVMPass::runOnOperation() {
   populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
   populateFuncToLLVMConversionPatterns(typeConverter, patterns);
   arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
-  arith::populateExpandBFloat16Patterns(patterns);
+  //arith::populateExpandBFloat16Patterns(patterns);
   populateVectorToSCFConversionPatterns(patterns);
   populateVectorToLLVMMatrixConversionPatterns(typeConverter, patterns);
   populateVectorToLLVMConversionPatterns(
