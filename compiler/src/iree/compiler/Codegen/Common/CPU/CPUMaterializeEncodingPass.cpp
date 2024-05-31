@@ -198,7 +198,7 @@ enumerateMatmulTileArm64(TypeRange elementTypes, ExecutableTargetAttr target) {
   }
 
   // Fallback - no architecture-optimized tile size for this case.
-  return {};
+  return {TileMxNxK{8, 8, 4}};
 }
 
 // Enumerate tile sizes to choose from on x86-64.
@@ -334,7 +334,7 @@ static TileMxNxK
 chooseMatmulTile(ArrayRef<TileMxNxK> enumeratedTiles, int64_t matmulNarrowM,
                  int64_t matmulNarrowN,
                  ArrayRef<int64_t> hostDefinedUpperBound = {}) {
-  assert((hostDefinedUpperBound.empty() || hostDefinedUpperBound.size() == 3) &&
+  assert((hostDefinedUpperBound.empty() || hostDefinedUpperBound.size() >= 3) &&
          "expected hostDefinedUpperBound is empty or has upper bound for {M, "
          "N, K}");
   // Handle narrow-N by transposing to reduce to narrow-M. Note: the
