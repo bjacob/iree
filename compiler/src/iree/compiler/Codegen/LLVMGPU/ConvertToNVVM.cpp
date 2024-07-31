@@ -44,8 +44,9 @@ namespace {
 /// code.
 struct ConvertToNVVMPass : public ConvertToNVVMBase<ConvertToNVVMPass> {
   void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<gpu::GPUDialect, IREE::GPU::IREEGPUDialect,
-                    LLVM::LLVMDialect, NVVM::NVVMDialect>();
+    registry
+        .insert<gpu::GPUDialect, IREE::GPU::IREEGPUDialect, LLVM::LLVMDialect,
+                NVVM::NVVMDialect, affine::AffineDialect>();
   }
   void runOnOperation() override {
     ModuleOp m = getOperation();
@@ -102,6 +103,8 @@ struct ConvertToNVVMPass : public ConvertToNVVMBase<ConvertToNVVMPass> {
       // better to use something else.
       vector::populateVectorTransposeLoweringPatterns(
           patterns, vector::VectorTransformsOptions());
+      populateVectorToSCFConversionPatterns(
+          patterns, VectorTransferToSCFOptions().enableFullUnroll());
       vector::populateVectorTransferLoweringPatterns(patterns);
       arith::populateExpandBFloat16Patterns(patterns);
       if (failed(applyPatternsAndFoldGreedily(m, std::move(patterns)))) {
