@@ -16,6 +16,7 @@
 #include "./vm.h"
 #include "iree/base/internal/path.h"
 #include "iree/hal/api.h"
+#include "iree/hal/buffer_view.h"
 #include "iree/hal/utils/allocators.h"
 #include "iree/modules/hal/module.h"
 #include "iree/tooling/device_util.h"
@@ -1247,6 +1248,11 @@ void SetupHalBindings(nanobind::module_ m) {
       .value("BFLOAT_16", IREE_HAL_ELEMENT_TYPE_BFLOAT_16)
       .value("COMPLEX_64", IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_64)
       .value("COMPLEX_128", IREE_HAL_ELEMENT_TYPE_COMPLEX_FLOAT_128)
+      .value("FLOAT_8_E5M2", IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2)
+      .value("FLOAT_8_E4M3", IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3)
+      .value("FLOAT_8_E5M2_FNUZ", IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2_FNUZ)
+      .value("FLOAT_8_E4M3_FNUZ", IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3_FNUZ)
+
       .export_values()
       .def("__int__",
            [](enum iree_hal_element_types_t self) { return (uint64_t)self; });

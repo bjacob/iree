@@ -1611,6 +1611,35 @@ iree_generated_e2e_runner_test(
     "requires-gpu-cdna3"
 )
 
+iree_generated_e2e_runner_test(
+  NAME
+    e2e_matmul_rocm_f8E5M2FNUZ_large_cdna3_mfma_data_tiled
+  TEST_TYPE
+    matmul
+  GENERATOR
+    "generate_e2e_matmul_tests.py"
+  GENERATOR_ARGS
+    "--lhs_rhs_type=f8E5M2FNUZ"
+    "--acc_type=f32"
+  TEST_RUNNER
+    iree_tools_testing_e2e_iree-e2e-matmul-test
+  TARGET_BACKENDS
+    "rocm"
+  DRIVERS
+    "hip"
+  COMPILER_FLAGS
+    ${IREE_HIP_TEST_COMPILER_FLAGS}
+    "--iree-opt-data-tiling"
+    "--iree-global-opt-experimental-rocm-data-tiling"
+    "--iree-global-opt-enable-early-materialization=true"
+  LABELS
+    "noasan"
+    "nomsan"
+    "notsan"
+    "noubsan"
+    "requires-gpu-cdna3"
+)
+
 endif()
 
 elseif(IREE_HIP_TEST_TARGET_CHIP MATCHES "^gfx11")

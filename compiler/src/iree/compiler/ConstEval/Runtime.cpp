@@ -9,6 +9,7 @@
 #include "iree/base/api.h"
 #include "iree/compiler/Dialect/Util/IR/UtilDialect.h"
 #include "iree/compiler/Dialect/VM/Target/Bytecode/BytecodeModuleTarget.h"
+#include "iree/hal/buffer_view.h"
 #include "iree/hal/drivers/local_task/registration/driver_module.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -67,6 +68,18 @@ LogicalResult convertToElementType(Location loc, Type baseType,
   } else if (baseType == builder.getBF16Type()) {
     *outElementType = IREE_HAL_ELEMENT_TYPE_BFLOAT_16;
     return success();
+  } else if (baseType == builder.getFloat8E5M2Type()) {
+    *outElementType = IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2;
+    return success();
+  } else if (baseType == builder.getFloat8E4M3Type()) {
+    *outElementType = IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3;
+    return success();
+  } else if (baseType == builder.getFloat8E5M2FNUZType()) {
+    *outElementType = IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2_FNUZ;
+    return success();
+  } else if (baseType == builder.getFloat8E4M3FNUZType()) {
+    *outElementType = IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3_FNUZ;
+    return success();
   }
 
   return emitError(loc)
@@ -87,6 +100,14 @@ Type mapElementType(Location loc, iree_hal_element_type_t halElementType) {
     return builder.getF16Type();
   } else if (halElementType == IREE_HAL_ELEMENT_TYPE_BFLOAT_16) {
     return builder.getBF16Type();
+  } else if (halElementType == IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2) {
+    return builder.getFloat8E5M2Type();
+  } else if (halElementType == IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3) {
+    return builder.getFloat8E4M3Type();
+  } else if (halElementType == IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2_FNUZ) {
+    return builder.getFloat8E5M2FNUZType();
+  } else if (halElementType == IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3_FNUZ) {
+    return builder.getFloat8E4M3FNUZType();
   }
 
   emitError(loc) << "unrecognized evaluated buffer view element type: "
