@@ -363,8 +363,7 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atoi_int32(data_str, &temp) || temp > INT8_MAX) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      int8_t temp_i8 = temp;
-      memcpy(out_data, &temp_i8, sizeof temp_i8);
+      *(int8_t*)out_data = (int8_t)temp;
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_UINT_8: {
@@ -372,8 +371,7 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atoi_uint32(data_str, &temp) || temp > UINT8_MAX) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint8_t temp_u8 = temp;
-      memcpy(out_data, &temp_u8, sizeof temp_u8);
+      *(uint8_t*)out_data = (uint8_t)temp;
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_INT_16:
@@ -382,8 +380,7 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atoi_int32(data_str, &temp) || temp > INT16_MAX) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      int16_t temp_i16 = temp;
-      memcpy(out_data, &temp_i16, sizeof temp_i16);
+      *(int16_t*)out_data = (int16_t)temp;
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_UINT_16: {
@@ -391,51 +388,33 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atoi_uint32(data_str, &temp) || temp > UINT16_MAX) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint16_t temp_u16 = temp;
-      memcpy(out_data, &temp_u16, sizeof temp_u16);
+      *(uint16_t*)out_data = (uint16_t)temp;
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_INT_32:
-    case IREE_HAL_ELEMENT_TYPE_SINT_32: {
-      int32_t temp_i32;
-      if (!iree_string_view_atoi_int32(data_str, &temp_i32)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_i32, sizeof temp_i32);
-      return iree_ok_status();
-    }
-    case IREE_HAL_ELEMENT_TYPE_UINT_32: {
-      uint32_t temp_u32;
-      if (!iree_string_view_atoi_uint32(data_str, &temp_u32)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_u32, sizeof temp_u32);
-      return iree_ok_status();
-    }
+    case IREE_HAL_ELEMENT_TYPE_SINT_32:
+      return iree_string_view_atoi_int32(data_str, (int32_t*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
+    case IREE_HAL_ELEMENT_TYPE_UINT_32:
+      return iree_string_view_atoi_uint32(data_str, (uint32_t*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
     case IREE_HAL_ELEMENT_TYPE_INT_64:
-    case IREE_HAL_ELEMENT_TYPE_SINT_64: {
-      int64_t temp_i64;
-      if (!iree_string_view_atoi_int64(data_str, &temp_i64)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_i64, sizeof temp_i64);
-      return iree_ok_status();
-    }
-    case IREE_HAL_ELEMENT_TYPE_UINT_64: {
-      uint64_t temp_u64;
-      if (!iree_string_view_atoi_uint64(data_str, &temp_u64)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_u64, sizeof temp_u64);
-      return iree_ok_status();
-    }
+    case IREE_HAL_ELEMENT_TYPE_SINT_64:
+      return iree_string_view_atoi_int64(data_str, (int64_t*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
+    case IREE_HAL_ELEMENT_TYPE_UINT_64:
+      return iree_string_view_atoi_uint64(data_str, (uint64_t*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
     case IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2: {
       float temp_float = 0;
       if (!iree_string_view_atof(data_str, &temp_float)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint8_t temp_u8 = iree_math_f32_to_f8e5m2(temp_float);
-      memcpy(out_data, &temp_u8, sizeof temp_u8);
+      *(uint8_t*)out_data = (uint8_t)iree_math_f32_to_f8e5m2(temp_float);
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3: {
@@ -443,8 +422,7 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atof(data_str, &temp_float)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint8_t temp_u8 = iree_math_f32_to_f8e4m3(temp_float);
-      memcpy(out_data, &temp_u8, sizeof temp_u8);
+      *(uint8_t*)out_data = (uint8_t)iree_math_f32_to_f8e4m3(temp_float);
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_FLOAT_8_E5M2_FNUZ: {
@@ -452,8 +430,7 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atof(data_str, &temp_float)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint8_t temp_u8 = iree_math_f32_to_f8e5m2fnuz(temp_float);
-      memcpy(out_data, &temp_u8, sizeof temp_u8);
+      *(uint8_t*)out_data = (uint8_t)iree_math_f32_to_f8e5m2fnuz(temp_float);
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_FLOAT_8_E4M3_FNUZ: {
@@ -461,44 +438,33 @@ static iree_status_t iree_hal_parse_element_unsafe(
       if (!iree_string_view_atof(data_str, &temp_float)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint8_t temp_u8 = iree_math_f32_to_f8e4m3fnuz(temp_float);
-      memcpy(out_data, &temp_u8, sizeof temp_u8);
+      *(uint8_t*)out_data = (uint8_t)iree_math_f32_to_f8e4m3fnuz(temp_float);
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_BFLOAT_16: {
-      float temp_float = 0;
-      if (!iree_string_view_atof(data_str, &temp_float)) {
+      float temp = 0;
+      if (!iree_string_view_atof(data_str, &temp)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint16_t temp_u16 = iree_math_f32_to_bf16(temp_float);
-      memcpy(out_data, &temp_u16, sizeof temp_u16);
+      *(uint16_t*)out_data = iree_math_f32_to_bf16(temp);
       return iree_ok_status();
     }
     case IREE_HAL_ELEMENT_TYPE_FLOAT_16: {
-      float temp_float = 0;
-      if (!iree_string_view_atof(data_str, &temp_float)) {
+      float temp = 0;
+      if (!iree_string_view_atof(data_str, &temp)) {
         return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
       }
-      uint16_t temp_u16 = iree_math_f32_to_f16(temp_float);
-      memcpy(out_data, &temp_u16, sizeof temp_u16);
+      *(uint16_t*)out_data = iree_math_f32_to_f16(temp);
       return iree_ok_status();
     }
-    case IREE_HAL_ELEMENT_TYPE_FLOAT_32: {
-      float temp_float = 0;
-      if (!iree_string_view_atof(data_str, &temp_float)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_float, sizeof temp_float);
-      return iree_ok_status();
-    }
-    case IREE_HAL_ELEMENT_TYPE_FLOAT_64: {
-      double temp_double = 0;
-      if (!iree_string_view_atod(data_str, &temp_double)) {
-        return iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
-      }
-      memcpy(out_data, &temp_double, sizeof temp_double);
-      return iree_ok_status();
-    }
+    case IREE_HAL_ELEMENT_TYPE_FLOAT_32:
+      return iree_string_view_atof(data_str, (float*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
+    case IREE_HAL_ELEMENT_TYPE_FLOAT_64:
+      return iree_string_view_atod(data_str, (double*)out_data)
+                 ? iree_ok_status()
+                 : iree_status_from_code(IREE_STATUS_INVALID_ARGUMENT);
     default: {
       // Treat any unknown format as binary.
       iree_host_size_t element_size =
