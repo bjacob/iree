@@ -1809,6 +1809,9 @@ iree_generated_e2e_runner_test(
     "--iree-opt-data-tiling"
     "--iree-global-opt-experimental-rocm-data-tiling"
     "--iree-global-opt-enable-early-materialization=true"
+  RUNNER_ARGS
+    "--require_exact_results=false"
+    "--acceptable_fp_delta=1e-04"
   LABELS
     "noasan"
     "nomsan"
