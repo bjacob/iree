@@ -123,7 +123,7 @@ static bool predicateApprox(StringRef name,
   StringRef expm1 = math::ExpM1Op::getOperationName();
   StringRef cbrt = math::CbrtOp::getOperationName();
   StringRef erf = math::ErfOp::getOperationName();
-  if (target.getBackend() == "rocm" && name == erf) {
+  if (isROCMBackend(target) && name == erf) {
     return false;
   }
   return llvm::is_contained({atan, atan2, tanh, log, log2, log1p, erf, asin,
