@@ -144,24 +144,16 @@ static TileSwizzle getIntrinsicSwizzle(MMAIntrinsicTy intrinsic,
   // Next come `layout.thread` dims.
   int64_t subgroupSize = getIntrinsicSubgroupSize(intrinsic);
   int64_t numThreadsInLayout = llvm::product_of(layout.thread);
-  assert(subgroupSize % numThreadsInLayout == 0 &&
-         "expected subgroupSize to be divisible by numThreadsInLayout");
-  assert(subgroupSize >= numThreadsInLayout &&
-         "expected at most subgroupSize threads in the layout");
-  int64_t extraDistributionFactor = subgroupSize / numThreadsInLayout;
+  assert(subgroupSize == numThreadsInLayout &&
+         "expected subgroups ize to match by the product of `thread` sizes");
   // Based on the MMA layouts, there is expected to be at most one dim with a
   // tstride of 0.
   assert(llvm::count(layout.tstrides, 0) <= 1 &&
          "expected at most one dim with a tstride of 0");
   for (auto [i, t, s] : llvm::enumerate(layout.thread, layout.tstrides)) {
-    // If the thread has a stride of 0, then we need a dimension for it in the
-    // swizzle so we can distribute by more than a factor of 1 along the dim.
-    if (t != 1 || s == 0) {
-      TileSwizzle::Dim tDim(Kind::CrossThread, t);
-      if (s == 0) {
-        tDim.distributionSize *= extraDistributionFactor;
-      }
-      expand(swizzle, i, tDim);
+    // If the thread has a stride of 0, insert a Skip dimension
+    if (s == 0) {
+      expand(swizzle, i, {Kind::Skip, t});
     }
   }
   // `layout.thread` dims are special in that they come with `layout.tstrides`

@@ -46,11 +46,6 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &os, TileSwizzle::Dim dim) {
-  if (dim.size != dim.distributionSize &&
-      dim.kind == TileSwizzle::Dim::Kind::CrossThread) {
-    return os << dim.size << "|" << dim.distributionSize << "(" << dim.kind
-              << ")";
-  }
   return os << dim.size << "(" << dim.kind << ")";
 }
 
@@ -122,6 +117,8 @@ std::string convertSwizzleKindToString(TileSwizzle::Dim::Kind kind) {
     return "CrossThread";
   case TileSwizzle::Dim::Kind::CrossIntrinsic:
     return "CrossIntrinsic";
+  case TileSwizzle::Dim::Kind::Skip:
+    return "Skip";
   default:
     assert(false && "unhandled enum type");
   }
@@ -138,6 +135,9 @@ convertStringToSwizzleKind(StringRef str) {
   }
   if (str == "CrossIntrinsic") {
     return TileSwizzle::Dim::Kind::CrossIntrinsic;
+  }
+  if (str == "Skip") {
+    return TileSwizzle::Dim::Kind::Skip;
   }
   return std::nullopt;
 }

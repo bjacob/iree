@@ -418,10 +418,10 @@ MMASingleSubgroupLayout getSingleSubgroupLayout(MMAIntrinsic intrinsic,
   case MMAIntrinsic::WMMAR3_I32_16x16x16_I8:
     switch (operandIndex) {
     case kMMAOperandLhs:
-      return {/*outer=*/{1, 1}, /*thread=*/{16, 1}, /*strides=*/{1, 0},
+      return {/*outer=*/{1, 1}, /*thread=*/{16, 2}, /*strides=*/{1, 0},
               /*element=*/{1, 16}};
     case kMMAOperandRhs:
-      return {/*outer=*/{1, 1}, /*thread=*/{1, 16}, /*tstrides=*/{0, 1},
+      return {/*outer=*/{1, 1}, /*thread=*/{2, 16}, /*tstrides=*/{0, 1},
               /*element=*/{16, 1}};
     case kMMAOperandAcc:
       return {/*outer=*/{8, 1}, /*thread=*/{2, 16}, /*tstrides=*/{16, 1},
@@ -431,13 +431,13 @@ MMASingleSubgroupLayout getSingleSubgroupLayout(MMAIntrinsic intrinsic,
   case MMAIntrinsic::WMMAR3_BF16_16x16x16_BF16:
     switch (operandIndex) {
     case kMMAOperandLhs:
-      return {/*outer=*/{1, 1}, /*thread=*/{16, 1}, /*strides=*/{1, 0},
+      return {/*outer=*/{1, 1}, /*thread=*/{16, 2}, /*strides=*/{1, 0},
               /*element=*/{1, 16}};
     case kMMAOperandRhs:
-      return {/*outer=*/{1, 1}, /*thread=*/{1, 16}, /*tstrides=*/{0, 1},
+      return {/*outer=*/{1, 1}, /*thread=*/{2, 16}, /*tstrides=*/{0, 1},
               /*element=*/{16, 1}};
     case kMMAOperandAcc:
-      return {/*outer=*/{16, 1}, /*thread=*/{1, 16}, /*tstrides=*/{0, 1},
+      return {/*outer=*/{16, 1}, /*thread=*/{2, 16}, /*tstrides=*/{0, 1},
               /*element=*/{1, 1}};
     }
   case MMAIntrinsic::WMMAR4_F32_16x16x16_F16:

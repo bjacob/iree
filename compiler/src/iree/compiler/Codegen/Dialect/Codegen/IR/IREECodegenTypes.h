@@ -29,7 +29,7 @@ namespace mlir::iree_compiler::IREE::Codegen {
 struct TileSwizzle {
   struct Dim {
     // Describes what varies across this dimension.
-    enum class Kind : int8_t {
+    enum class Kind {
       // This dimension is internal to one intrinsic on one thread. This
       // is only seen for intrinsic operands that are themselves vectors.
       // For example, with AMD MFMA, for the MFMA_F32_16x16x4_F32 intrinsic,
@@ -52,34 +52,20 @@ struct TileSwizzle {
       // generated code. In other words, it is an actual unrolling factor,
       // resulting in this many more instructions being generated and executed
       // on each thread/subgroup.
-      CrossIntrinsic
+      CrossIntrinsic,
+      // This dimension does not actually occur in this tile, but acts as a
+      // stride.
+      Skip,
     };
 
     Kind kind = Kind::Internal;
 
     // The size of the dimension.
-    int16_t size = 0;
-
-    // The size of the dimension for distribution. This is used for CrossThread
-    // dimensions, because we may want to distribute more than `size` threads to
-    // this dimension. The `distributionSize` is expected to be greater than or
-    // equal to `size`, and the mapping of the delinearized (by the distribution
-    // sizes) thread ID index to the offset into the Dim is
-    // `delinearized_tid / (distributionSize / size)`. The `distributionSize`
-    // for non-CrossThread dimensions should always be 1, since there is no
-    // distribution for these dimensions.
-    int16_t distributionSize = 1;
+    int size = 0;
 
     // Support constructing from any size type.
     template <typename T>
-    Dim(Kind kind, T size) : kind(kind), size(size) {
-      if (kind == Kind::CrossThread) {
-        distributionSize = size;
-      }
-    }
-    template <typename T>
-    Dim(Kind kind, T size, T distributionSize)
-        : kind(kind), size(size), distributionSize(distributionSize) {}
+    Dim(Kind kind, T size) : kind(kind), size(size) {}
   };
 
   using ExpandShapeDimVectorType = llvm::SmallVector<Dim, 4>;
