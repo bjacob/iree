@@ -46,10 +46,9 @@ llvm::raw_ostream &operator<<(llvm::raw_ostream &os,
 }
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &os, TileSwizzle::Dim dim) {
-  if (dim.size() != dim.distributionSize() &&
-      dim.kind() == TileSwizzle::Dim::Kind::CrossThread) {
-    return os << dim.size() << "|" << dim.distributionSize() << "("
-              << dim.kind() << ")";
+  if (dim.distributionFactor() != 1) {
+    return os << dim.size() << "|" << dim.distributionFactor() * dim.size()
+              << "(" << dim.kind() << ")";
   }
   return os << dim.size() << "(" << dim.kind() << ")";
 }
