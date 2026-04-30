@@ -1216,10 +1216,14 @@ private:
   }
 
   /// Intrinsic-first path for `iree_codegen.inner_tiled`: pick a
-  /// `DataTiledMMAAttr` (same decision the lowering will make) and derive the
-  /// packed-layout tile shape from it. No narrow-N transpose: unlike the
-  /// legacy mmt4d path, the inner_tiled lowering handles narrow dims natively
-  /// via `intrinsics_m` / `intrinsics_n`.
+  /// `DataTiledMMAAttr` and derive the packed-layout tile shape from it.
+  /// Narrow dims are handled natively via `intrinsics_m` / `intrinsics_n`,
+  /// not by a matmul-level M↔N swap like the legacy mmt4d path. When the
+  /// cost model picks `transposed_intrinsic = true`, the ACC swizzle stores
+  /// its inner tile in (N, M) order, so the ACC pack info needs the same
+  /// inner-tile swap. Only ACC, only inner — outer dims still iterate as
+  /// (M_outer, N_outer) per the inner_tiled op's indexing maps, and LHS/RHS
+  /// keep their physical layout.
   static MaterializeEncodingInfo getInnerTiledEncodingInfo(
       MLIRContext *ctx, IREE::Encoding::EncodingAttr encoding,
       const linalg::ContractionDimensions &cDims, DictionaryAttr config) {
@@ -1239,6 +1243,19 @@ private:
         getScalableTileFlags(cDims, encoding, config);
     if (succeeded(scalableFlags)) {
       info.scalableTiles = std::move(scalableFlags);
+    }
+    if (mma.getTransposedIntrinsic() &&
+        encoding.getOperandIndex().getValue() ==
+            IREE::Encoding::MATMUL_RESULT &&
+        info.innerTileSizes.size() >= 2) {
+      auto transposeInner = [](auto &a) {
+        std::swap(a[a.size() - 2], a[a.size() - 1]);
+      };
+      transposeInner(info.innerDimsPos);
+      transposeInner(info.innerTileSizes);
+      if (info.scalableTiles) {
+        transposeInner(info.scalableTiles.value());
+      }
     }
     return info;
   }

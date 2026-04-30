@@ -211,3 +211,52 @@ module attributes { transform.with_named_sequence } {
 //       CHECK:   %[[RHS_UI32:.+]] = arith.extui %{{.+}} : vector<4x1xi8> to vector<4x1xi32>
 //       CHECK:   vector.contract
 //  CHECK-SAME:     %[[LHS_UI32]], %[[RHS_UI32]], %{{.+}} : vector<4x1xi32>, vector<4x1xi32> into vector<4x4xi32>
+
+// -----
+
+// AVX-512 1×16×1 f32 with `transposed_intrinsic = true`, intrinsics_m=2,
+// intrinsics_n=4. With M↔N swapped, the per-intrinsic LHS slice is the
+// 16-wide side and the RHS slice is 1-wide, so the broadcast widens RHS
+// 1→16 (not LHS). The ACC swizzle expands cross-intrinsic factors as
+// (intrinsicsN, intrinsicsM), so the (mu, nu) FMA loop indexes ACC at
+// `nu * intrinsicsM + mu` (= 0, 2, 4, 6, 1, 3, 5, 7).
+
+#contraction_accesses_t = [
+ affine_map<() -> ()>,
+ affine_map<() -> ()>,
+ affine_map<() -> ()>
+]
+func.func @lower_avx512_1x16x1_f32_transposed(
+    %lhs: vector<32x1xf32>, %rhs: vector<4x1xf32>, %acc: vector<4x32xf32>)
+    -> vector<4x32xf32> {
+  %0 = iree_codegen.inner_tiled ins(%lhs, %rhs) outs(%acc) {
+    indexing_maps = #contraction_accesses_t,
+    iterator_types = [],
+    kind = #iree_cpu.data_tiled_mma_layout<intrinsic = MMA_X86_AVX512_1x16x1_F32_F32, intrinsics_m = 2, intrinsics_n = 4, transposed_intrinsic = true>,
+    semantics = #iree_cpu.mma_semantics<>
+  } : vector<32x1xf32>, vector<4x1xf32> into vector<4x32xf32>
+  return %0 : vector<4x32xf32>
+}
+
+module attributes { transform.with_named_sequence } {
+  transform.named_sequence @__transform_main(%root: !transform.any_op {transform.readonly}) {
+    %func = transform.structured.match ops{["func.func"]} in %root
+        : (!transform.any_op) -> !transform.any_op
+    transform.apply_patterns to %func {
+      transform.apply_patterns.iree.lower_inner_tiled
+    } : !transform.any_op
+    transform.yield
+  }
+}
+
+// CHECK-LABEL: func @lower_avx512_1x16x1_f32_transposed
+//       CHECK:   %[[ACC_T:.+]]:8 = util.hoistable_conversion "data_tiled_acc_distribute"
+//       CHECK:   vector.broadcast {{.*}} : vector<1xf32> to vector<16x1xf32>
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#0)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#2)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#4)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#6)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#1)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#3)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#5)
+//       CHECK:   llvm.call_intrinsic "llvm.fma.v16f32"({{.*}}, {{.*}}, %[[ACC_T]]#7)
