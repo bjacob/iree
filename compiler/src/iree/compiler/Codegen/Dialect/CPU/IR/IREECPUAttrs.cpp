@@ -351,6 +351,16 @@ getRowMajorTilesMNKShape(MMAIntrinsic intrinsic) {
   case MMAIntrinsic::MMA_X86_AVX512_1x16x2_I32_I8_CASTI16:
   case MMAIntrinsic::MMA_X86_AVX512VNNI_1x16x2_I32_I8_CASTI16:
     return Tuple{1, 16, 2};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F32:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F64_F64:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F16_F16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_BF16_BF16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_BF16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I32:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I8:
+    return Tuple{1, 1, 1};
   default:
     return {};
   }
@@ -539,6 +549,24 @@ static std::tuple<Type, Type, Type> getABCElementTypes(MLIRContext *context,
     return {i8, i8, i32};
   case MMAIntrinsic::MMA_ARM_SVE_FMLA_1x4VLx1_F32_F32:
     return {f32, f32, f32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F32:
+    return {f32, f32, f32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F64_F64:
+    return {f64, f64, f64};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F16_F16:
+    return {f16, f16, f16};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F16:
+    return {f16, f16, f32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_BF16_BF16:
+    return {bf16, bf16, bf16};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_BF16:
+    return {bf16, bf16, f32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I32:
+    return {i32, i32, i32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I16:
+    return {i16, i16, i32};
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I8:
+    return {i8, i8, i32};
   default:
     return {Type(), Type(), Type()};
   }
@@ -720,6 +748,35 @@ static Value createCpuMmaIntrinsicCall(OpBuilder &builder, Location loc,
         builder, loc, acc,
         call("llvm.x86.avx512.pmaddw.d.512", accType,
              ValueRange{widen(lhs, i16), widen(rhs, i16)}));
+  }
+  // Generic scalar fallbacks: each invocation is a single fmuladd or
+  // mul+add on `vector<1xT>` operands. The surrounding unroll loop in
+  // `buildDataTiledMMAUnderlyingOperations` provides whatever ILP we get,
+  // and a downstream backend can vectorize a tight loop of these into
+  // SIMD if it likes — but no specific intrinsic is required here, which
+  // is the whole point.
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F32:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F64_F64:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F16_F16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_BF16_BF16:
+    return vector::FMAOp::create(builder, loc, lhs, rhs, acc);
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_BF16:
+    // ACC is f32, LHS/RHS are narrow float — extf to f32 first. Note
+    // that bf16/f16 don't support fmuladd directly on every backend, so
+    // widening here is also the safer lowering even when it'd round-trip.
+    return vector::FMAOp::create(builder, loc, widen(lhs, f32),
+                                 widen(rhs, f32), acc);
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I32:
+    return arith::AddIOp::create(
+        builder, loc, acc,
+        arith::MulIOp::create(builder, loc, lhs, rhs));
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I16:
+  case MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I8: {
+    Type i32 = builder.getI32Type();
+    return arith::AddIOp::create(
+        builder, loc, acc,
+        arith::MulIOp::create(builder, loc, widen(lhs, i32), widen(rhs, i32)));
   }
   default:
     return {};

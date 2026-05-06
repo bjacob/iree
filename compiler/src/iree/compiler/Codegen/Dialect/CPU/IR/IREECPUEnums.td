@@ -132,6 +132,37 @@ def MMA_X86_AVX512VNNI_1x16x2_I32_I8_CASTI16
 def MMA_ARM_SVE_FMLA_1x4VLx1_F32_F32
     : I32EnumAttrCase<"MMA_ARM_SVE_FMLA_1x4VLx1_F32_F32", 0x2210>;
 
+// Architecture nibble 0xF: generic scalar fallbacks. These have no required
+// ISA feature and are always available; they exist to give the data-tiling
+// cost model a candidate for element-type combinations that no real
+// hardware MMA intrinsic on the target supports. Tile shape is 1×1×1 — they
+// lower to a single scalar fmuladd / mul+add per intrinsic invocation, with
+// the surrounding unroll loop providing whatever ILP we get. Real intrinsics
+// always outscore these (their `usefulOps = intrinsicM*intrinsicN*intrinsicK`
+// is strictly larger than 1) so they only win as a fallback.
+//
+// One enum value per (LHS_RHS_ACC) element-type triple we care about.
+// More can be added as the workload mix demands; we deliberately don't
+// chase combinatorial completeness here.
+def MMA_GENERIC_SCALAR_1x1x1_F32_F32
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_F32_F32", 0xF110>;
+def MMA_GENERIC_SCALAR_1x1x1_F64_F64
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_F64_F64", 0xF100>;
+def MMA_GENERIC_SCALAR_1x1x1_F16_F16
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_F16_F16", 0xF120>;
+def MMA_GENERIC_SCALAR_1x1x1_F32_F16
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_F32_F16", 0xF121>;
+def MMA_GENERIC_SCALAR_1x1x1_BF16_BF16
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_BF16_BF16", 0xF130>;
+def MMA_GENERIC_SCALAR_1x1x1_F32_BF16
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_F32_BF16", 0xF131>;
+def MMA_GENERIC_SCALAR_1x1x1_I32_I32
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_I32_I32", 0xF180>;
+def MMA_GENERIC_SCALAR_1x1x1_I32_I16
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_I32_I16", 0xF1A0>;
+def MMA_GENERIC_SCALAR_1x1x1_I32_I8
+    : I32EnumAttrCase<"MMA_GENERIC_SCALAR_1x1x1_I32_I8", 0xF1C0>;
+
 def IREECPU_MMAIntrinsic
     : IREECPU_I32EnumAttr<
           "MMAIntrinsic", "Descriptor for different MMA intrinsics",
@@ -150,7 +181,18 @@ def IREECPU_MMAIntrinsic
            MMA_X86_AVX512VNNI_1x16x2_I32_I8_CASTI16,
 
            // Arm SVE
-           MMA_ARM_SVE_FMLA_1x4VLx1_F32_F32]>;
+           MMA_ARM_SVE_FMLA_1x4VLx1_F32_F32,
+
+           // Generic scalar fallbacks (always available, lowest priority).
+           MMA_GENERIC_SCALAR_1x1x1_F32_F32,
+           MMA_GENERIC_SCALAR_1x1x1_F64_F64,
+           MMA_GENERIC_SCALAR_1x1x1_F16_F16,
+           MMA_GENERIC_SCALAR_1x1x1_F32_F16,
+           MMA_GENERIC_SCALAR_1x1x1_BF16_BF16,
+           MMA_GENERIC_SCALAR_1x1x1_F32_BF16,
+           MMA_GENERIC_SCALAR_1x1x1_I32_I32,
+           MMA_GENERIC_SCALAR_1x1x1_I32_I16,
+           MMA_GENERIC_SCALAR_1x1x1_I32_I8]>;
 
 //===----------------------------------------------------------------------===//
 // CPU Lowering Pipelines

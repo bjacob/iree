@@ -345,11 +345,16 @@ getMmaIntrinsicRequiredFeatures(IREE::CPU::MMAIntrinsic intr) {
   }
 }
 
-/// Returns x86 `MMAIntrinsic` cases whose required ISA extensions are all
-/// present in `config` (`cpu_features` / target features). Only the "natural"
-/// (M<=N) intrinsic orientations are listed; the M↔N-swapped orientation is
-/// expressed by the `transposed_intrinsic` flag on DataTiledMMAAttr, enumerated
-/// separately by the cost model.
+/// Returns the `MMAIntrinsic` cases potentially usable for `config`: the x86
+/// architecture-specific intrinsics whose required ISA extensions are all
+/// present in `config`'s `cpu_features`, plus the architecture-agnostic
+/// `MMA_GENERIC_SCALAR_*` fallbacks. Only the "natural" (M<=N) intrinsic
+/// orientation is listed; the M↔N-swapped orientation is expressed by the
+/// `transposed_intrinsic` flag on DataTiledMMAAttr, enumerated separately by
+/// the cost model. The cost model picks among these based on element-type
+/// match and `usefulOps`; the 1×1×1 generic intrinsics naturally lose to any
+/// real intrinsic that fits, so they only win as a fallback when no real
+/// MMA covers the requested element types.
 static SmallVector<IREE::CPU::MMAIntrinsic>
 getMmaIntrinsicsForTargetConfig(DictionaryAttr config) {
   using IREE::CPU::MMAIntrinsic;
@@ -357,31 +362,45 @@ getMmaIntrinsicsForTargetConfig(DictionaryAttr config) {
   if (!config) {
     return out;
   }
-  if (!isX86(config)) {
-    return out;
+  if (isX86(config)) {
+    static const MMAIntrinsic kAllX86[] = {
+        MMAIntrinsic::MMA_X86_AVX2_FMA_1x8x1_F32_F32,
+        MMAIntrinsic::MMA_X86_AVX512_1x8x1_F64_F64,
+        MMAIntrinsic::MMA_X86_AVX512_1x16x1_F32_F32,
+        MMAIntrinsic::MMA_X86_AVX512_1x16x1_F32_F16_CASTF32,
+        MMAIntrinsic::MMA_X86_AVX512FP16_1x32x1_F16_F16,
+        MMAIntrinsic::MMA_X86_AVX512BF16_1x16x2_F32_BF16,
+        MMAIntrinsic::MMA_X86_AVX512_1x16x2_I32_I16,
+        MMAIntrinsic::MMA_X86_AVX512VNNI_1x16x2_I32_I16,
+        MMAIntrinsic::MMA_X86_AVX512_1x16x2_I32_I8_CASTI16,
+        MMAIntrinsic::MMA_X86_AVX512VNNI_1x16x2_I32_I8_CASTI16,
+    };
+    for (MMAIntrinsic intr : kAllX86) {
+      SmallVector<StringRef> required = getMmaIntrinsicRequiredFeatures(intr);
+      if (required.empty()) {
+        continue;
+      }
+      if (llvm::all_of(required,
+                       [&](StringRef f) { return hasFeature(config, f); })) {
+        out.push_back(intr);
+      }
+    }
   }
-  static const MMAIntrinsic kAllX86[] = {
-      MMAIntrinsic::MMA_X86_AVX2_FMA_1x8x1_F32_F32,
-      MMAIntrinsic::MMA_X86_AVX512_1x8x1_F64_F64,
-      MMAIntrinsic::MMA_X86_AVX512_1x16x1_F32_F32,
-      MMAIntrinsic::MMA_X86_AVX512_1x16x1_F32_F16_CASTF32,
-      MMAIntrinsic::MMA_X86_AVX512FP16_1x32x1_F16_F16,
-      MMAIntrinsic::MMA_X86_AVX512BF16_1x16x2_F32_BF16,
-      MMAIntrinsic::MMA_X86_AVX512_1x16x2_I32_I16,
-      MMAIntrinsic::MMA_X86_AVX512VNNI_1x16x2_I32_I16,
-      MMAIntrinsic::MMA_X86_AVX512_1x16x2_I32_I8_CASTI16,
-      MMAIntrinsic::MMA_X86_AVX512VNNI_1x16x2_I32_I8_CASTI16,
+  // Architecture-agnostic generic-scalar intrinsics: always available, no
+  // required feature. The cost model's element-type check picks the right
+  // one; tile shape is 1×1×1 so any real intrinsic outscores them.
+  static const MMAIntrinsic kAllGeneric[] = {
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F32,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F64_F64,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F16_F16,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_F16,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_BF16_BF16,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_F32_BF16,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I32,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I16,
+      MMAIntrinsic::MMA_GENERIC_SCALAR_1x1x1_I32_I8,
   };
-  for (MMAIntrinsic intr : kAllX86) {
-    SmallVector<StringRef> required = getMmaIntrinsicRequiredFeatures(intr);
-    if (required.empty()) {
-      continue;
-    }
-    if (llvm::all_of(required,
-                     [&](StringRef f) { return hasFeature(config, f); })) {
-      out.push_back(intr);
-    }
-  }
+  llvm::append_range(out, kAllGeneric);
   return out;
 }
 
