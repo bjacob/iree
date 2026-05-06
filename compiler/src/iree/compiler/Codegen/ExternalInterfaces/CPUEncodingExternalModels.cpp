@@ -1175,9 +1175,24 @@ struct CPUEncodingResolverMaterializerAttr final
     if (linalg::isaContractionOpInterface(linalgOp)) {
       DictionaryAttr config = layoutAttr.getConfiguration();
       if (getEnableInnerTiledFromConfig(config)) {
-        return lowerContractionToInnerTiled(
-            b, linalgOp, convertedOperands,
-            cast<IREE::Encoding::LayoutMaterializerAttr>(layoutAttr));
+        // Try to lower to `iree_codegen.inner_tiled`. If no candidate MMA
+        // intrinsic is available for the encoding's element types under this
+        // target, lowering returns null — in that case fall back to dropping
+        // the encoding and cloning the op, producing a plain `linalg.matmul`
+        // for normal codegen to handle. The companion `getEncodingInfo`
+        // (`getInnerTiledEncodingInfo`) returns identity-layout info in the
+        // same "no MMA" case, so the operand `iree_encoding.set_encoding`
+        // ops also fold to identity and `convertedOperands` are already the
+        // plain (unencoded) tensors we want to clone with.
+        if (Operation *inner = lowerContractionToInnerTiled(
+                b, linalgOp, convertedOperands,
+                cast<IREE::Encoding::LayoutMaterializerAttr>(layoutAttr))) {
+          return inner;
+        }
+        int64_t numInputs = linalgOp.getNumDpsInputs();
+        return dropEncodingAndCloneOp(b, linalgOp,
+                                      convertedOperands.take_front(numInputs),
+                                      convertedOperands.drop_front(numInputs));
       }
       return lowerContractionOpWithEncoding(
           b, linalgOp, convertedOperands,

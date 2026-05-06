@@ -250,6 +250,48 @@ func.func @unset_encoding_matmul_RESULT_inner_tiled_avx512(%arg0: tensor<127x255
 
 // -----
 
+// AVX2 (`+avx2,+fma`) has no MMA intrinsic for bf16/f32, so materialize-encoding
+// drops the encodings: the matmul stays as plain `linalg.matmul` and the
+// surrounding `set_encoding` / `unset_encoding` ops fold to identity (no pack
+// / unpack), since `getInnerTiledEncodingInfo` returns identity-layout info
+// and `lowerOp` falls back from `lowerContractionToInnerTiled` to
+// `dropEncodingAndCloneOp`.
+
+#map_drop = affine_map<(d0, d1, d2) -> (d0, d2)>
+#map_drop1 = affine_map<(d0, d1, d2) -> (d2, d1)>
+#map_drop2 = affine_map<(d0, d1, d2) -> (d0, d1)>
+#encoding_drop_lhs = #iree_encoding.encoding<operand_index = 0, op_type = matmul, element_types = [bf16, bf16, f32], user_indexing_maps = [#map_drop, #map_drop1, #map_drop2], iteration_sizes = [?, ?, ?]>
+#encoding_drop_rhs = #iree_encoding.encoding<operand_index = 1, op_type = matmul, element_types = [bf16, bf16, f32], user_indexing_maps = [#map_drop, #map_drop1, #map_drop2], iteration_sizes = [?, ?, ?]>
+#encoding_drop_res = #iree_encoding.encoding<operand_index = 2, op_type = matmul, element_types = [bf16, bf16, f32], user_indexing_maps = [#map_drop, #map_drop1, #map_drop2], iteration_sizes = [?, ?, ?]>
+func.func @matmul_bf16_f32_avx2_drops_encoding(%arg0: tensor<?x?xbf16>, %arg1: tensor<?x?xbf16>, %m: index, %n: index, %k: index) -> tensor<?x?xf32> attributes {
+   hal.executable.target = #hal.executable.target<"llvm-cpu", "xyz", {target_triple = "x86_64-xyz-xyz", cpu_features = "+avx2,+fma", enable_inner_tiled = true, iree.encoding.resolver = #iree_cpu.cpu_encoding_resolver<>}>
+} {
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %cst = arith.constant 0.0 : f32
+  %d0 = tensor.dim %arg0, %c0 : tensor<?x?xbf16>
+  %d1 = tensor.dim %arg1, %c1 : tensor<?x?xbf16>
+  %0 = iree_encoding.set_encoding %arg0 encoding_dims{%m, %n, %k} : tensor<?x?xbf16> -> tensor<?x?xbf16, #encoding_drop_lhs>
+  %1 = iree_encoding.set_encoding %arg1 encoding_dims{%m, %n, %k} : tensor<?x?xbf16> -> tensor<?x?xbf16, #encoding_drop_rhs>
+  %2 = tensor.empty(%d0, %d1) : tensor<?x?xf32, #encoding_drop_res>
+  %3 = linalg.fill ins(%cst : f32) outs(%2 : tensor<?x?xf32, #encoding_drop_res>) -> tensor<?x?xf32, #encoding_drop_res>
+  %4 = linalg.matmul ins(%0, %1 : tensor<?x?xbf16, #encoding_drop_lhs>, tensor<?x?xbf16, #encoding_drop_rhs>)
+      outs(%3 : tensor<?x?xf32, #encoding_drop_res>) -> tensor<?x?xf32, #encoding_drop_res>
+  %5 = iree_encoding.unset_encoding %4 encoding_dims{%m, %n, %k} : tensor<?x?xf32, #encoding_drop_res> -> tensor<?x?xf32>{%d0, %d1}
+  return %5 : tensor<?x?xf32>
+}
+// CHECK-LABEL: func @matmul_bf16_f32_avx2_drops_encoding(
+//  CHECK-SAME:   %[[ARG0_DROP:[a-zA-Z0-9]+]]: tensor<?x?xbf16>
+//  CHECK-SAME:   %[[ARG1_DROP:[a-zA-Z0-9]+]]: tensor<?x?xbf16>
+//   CHECK-NOT:   linalg.pack
+//   CHECK-NOT:   iree_codegen.inner_tiled
+//       CHECK:   %[[FILL_DROP:.+]] = linalg.fill {{.*}} -> tensor<?x?xf32>
+//       CHECK:   %[[MM_DROP:.+]] = linalg.matmul ins(%[[ARG0_DROP]], %[[ARG1_DROP]] : tensor<?x?xbf16>, tensor<?x?xbf16>) outs(%[[FILL_DROP]] : tensor<?x?xf32>) -> tensor<?x?xf32>
+//   CHECK-NOT:   linalg.unpack
+//       CHECK:   return %[[MM_DROP]] : tensor<?x?xf32>
+
+// -----
+
 // It tests with bindings and checks that the reshape ops are folded into bindings.
 
 #executable_target_xyz = #hal.executable.target<"llvm-cpu", "xyz", {target_triple = "x86_64-xyz-xyz", iree.encoding.resolver = #iree_cpu.cpu_encoding_resolver<>}>
